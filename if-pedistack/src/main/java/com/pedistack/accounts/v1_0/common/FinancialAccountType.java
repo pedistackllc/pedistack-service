@@ -1,0 +1,11 @@
+package com.pedistack.accounts.v1_0.common;
+
+public enum FinancialAccountType {
+
+    MAIN,
+    LOYALTY,
+    COMMISSION,
+    DISCOUNT
+    ;
+
+}

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  pedistack:
+    build:
+      context: ../pedistack-service
+      dockerfile: ../pedistack-service/Dockerfile
+    container_name: pedistack
+    environment:
+      - POSTGRES_USER=pedistack
+      - POSTGRES_PASSWORD=ABc123456!
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://104.197.93.30:5432/pedistack
+      - SPRING_DATASOURCE_USERNAME=pedistack
+      - SPRING_DATASOURCE_PASSWORD=ABc123456!
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - logging.level.root=INFO
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

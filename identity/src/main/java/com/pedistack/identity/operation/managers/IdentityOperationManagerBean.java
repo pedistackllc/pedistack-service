@@ -1,0 +1,704 @@
+package com.pedistack.identity.operation.managers;
+
+import com.pedistack.accounts.operation.managers.FinancialAccountOperationManager;
+import com.pedistack.common.accounts.AccountType;
+import com.pedistack.common.exception.PedistackErrorDescriptions;
+import com.pedistack.common.exception.PedistackException;
+import com.pedistack.common.identity.IdentityStatus;
+import com.pedistack.common.managers.GlobalConfigurationManager;
+import com.pedistack.db.identity.*;
+import com.pedistack.db.oauth.UserEntity;
+import com.pedistack.db.planet.CountryEntity;
+import com.pedistack.db.planet.CountryEntityDaoManager;
+import com.pedistack.db.planet.CurrencyEntity;
+import com.pedistack.identity.v1_0.*;
+import com.pedistack.identity.v1_0.common.*;
+import com.pedistack.oauth.operation.managers.UserOperationManager;
+import com.pedistack.v1_0.common.CountryCode;
+import com.pedistack.v1_0.common.LanguageCode;
+import java.util.List;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+public class IdentityOperationManagerBean implements IdentityOperationManager {
+
+  private final UserOperationManager userOperationManager;
+  private final IdentityEntityDaoManager identityEntityDaoManager;
+  private final AddressInformationOperationManager addressInformationOperationManager;
+  private final BusinessInformationOperationManager businessInformationOperationManager;
+  private final DeveloperInformationOperationManager developerInformationOperationManager;
+  private final IdentificationInformationOperationManager identificationInformationOperationManager;
+  private final PersonalInformationOperationManager personalInformationOperationManager;
+  private final SocialMediaInformationOperationManager socialMediaInformationOperationManager;
+  private final GlobalConfigurationManager globalConfigurationManager;
+  private final FinancialAccountOperationManager financialAccountOperationManager;
+  private final CountryEntityDaoManager countryEntityDaoManager;
+
+  public IdentityOperationManagerBean(
+      UserOperationManager userOperationManager,
+      CountryEntityDaoManager countryEntityDaoManager,
+      FinancialAccountOperationManager financialAccountOperationManager,
+      IdentityEntityDaoManager identityEntityDaoManager,
+      AddressInformationOperationManager addressInformationOperationManager,
+      BusinessInformationOperationManager businessInformationOperationManager,
+      DeveloperInformationOperationManager developerInformationOperationManager,
+      IdentificationInformationOperationManager identificationInformationOperationManager,
+      PersonalInformationOperationManager personalInformationOperationManager,
+      GlobalConfigurationManager globalConfigurationManager,
+      SocialMediaInformationOperationManager socialMediaInformationOperationManager) {
+    this.userOperationManager = userOperationManager;
+    this.globalConfigurationManager = globalConfigurationManager;
+    this.identityEntityDaoManager = identityEntityDaoManager;
+    this.addressInformationOperationManager = addressInformationOperationManager;
+    this.businessInformationOperationManager = businessInformationOperationManager;
+    this.developerInformationOperationManager = developerInformationOperationManager;
+    this.identificationInformationOperationManager = identificationInformationOperationManager;
+    this.personalInformationOperationManager = personalInformationOperationManager;
+    this.socialMediaInformationOperationManager = socialMediaInformationOperationManager;
+    this.financialAccountOperationManager = financialAccountOperationManager;
+    this.countryEntityDaoManager = countryEntityDaoManager;
+  }
+
+  @Override
+  @Transactional
+  public IdentityResponse customerRegistration(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      CustomerRegistrationRequest customerRegistrationRequest)
+      throws PedistackException {
+
+    final CountryEntity countryEntity =
+        countryEntityDaoManager.findByAlpha2Code(customerRegistrationRequest.getCountryCode());
+    final String userIdentifier =
+        userOperationManager.createUser(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            customerRegistrationRequest.getMsisdn(),
+            customerRegistrationRequest.getEmailAddress(),
+            customerRegistrationRequest.getUsername(),
+            customerRegistrationRequest.getPassword(),
+            globalConfigurationManager.defaultCustomerProfileName());
+
+    final UserEntity userEntity = new UserEntity();
+    userEntity.setId(userIdentifier);
+
+    final Person person = new Person();
+    BeanUtils.copyProperties(customerRegistrationRequest, person);
+    final PersonEntity personEntity =
+        personalInformationOperationManager.addOrUpdatePersonalInformation(
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, person);
+
+    final IdentityEntity identityEntity = new IdentityEntity();
+    identityEntity.setInternalIdentity(RandomStringUtils.randomNumeric(15));
+    identityEntity.setUser(userEntity);
+    identityEntity.setPerson(personEntity);
+    identityEntity.setStatus(IdentityStatus.REGISTERED.name());
+    identityEntityDaoManager.save(identityEntity);
+
+    for (CurrencyEntity currencyEntity : countryEntity.getCurrencies()) {
+      financialAccountOperationManager.createUserAccounts(
+          tenant,
+          sessionUserIdentifier,
+          sessionReference,
+          userIdentifier,
+          currencyEntity.getCode(),
+          AccountType.MAIN,
+          AccountType.LOYALTY);
+    }
+
+    final IdentityResponse identityResponse = new IdentityResponse();
+    identityResponse.setInternalIdentity(identityEntity.getInternalIdentity());
+    identityResponse.setMsisdn(customerRegistrationRequest.getMsisdn());
+    identityResponse.setEmailAddress(customerRegistrationRequest.getEmailAddress());
+    identityResponse.setUsername(customerRegistrationRequest.getUsername());
+    identityResponse.setStatus(com.pedistack.identity.v1_0.common.IdentityStatus.REGISTERED);
+
+    return identityResponse;
+  }
+
+  @Override
+  @Transactional
+  public IdentityResponse businessRegistration(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      BusinessRegistrationRequest businessRegistrationRequest)
+      throws PedistackException {
+    final CountryEntity countryEntity =
+        countryEntityDaoManager.findByAlpha2Code(businessRegistrationRequest.getCountryCode());
+    final String userIdentifier =
+        userOperationManager.createUser(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            businessRegistrationRequest.getMsisdn(),
+            businessRegistrationRequest.getEmailAddress(),
+            businessRegistrationRequest.getUsername(),
+            businessRegistrationRequest.getPassword(),
+            globalConfigurationManager.defaultCustomerProfileName());
+
+    final UserEntity userEntity = new UserEntity();
+    userEntity.setId(userIdentifier);
+
+    final Person person = new Person();
+    BeanUtils.copyProperties(businessRegistrationRequest, person);
+    final PersonEntity personEntity =
+        personalInformationOperationManager.addOrUpdatePersonalInformation(
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, person);
+
+    final Business business = new Business();
+    BeanUtils.copyProperties(businessRegistrationRequest, business);
+    final BusinessEntity businessEntity =
+        businessInformationOperationManager.addOrUpdateBusinessInformation(
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, business);
+
+    final PostalAddress postalAddress = new PostalAddress();
+    BeanUtils.copyProperties(businessRegistrationRequest, postalAddress);
+    final AddressEntity postalAddressEntity =
+        addressInformationOperationManager.addOrUpdatePostalAddressInformation(
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, null, postalAddress);
+
+    for (CurrencyEntity currencyEntity : countryEntity.getCurrencies()) {
+      financialAccountOperationManager.createUserAccounts(
+          tenant,
+          sessionUserIdentifier,
+          sessionReference,
+          userIdentifier,
+          currencyEntity.getCode(),
+          AccountType.MAIN,
+          AccountType.LOYALTY,
+          AccountType.COMMISSION);
+    }
+
+    final IdentityEntity identityEntity = new IdentityEntity();
+    identityEntity.setInternalIdentity(RandomStringUtils.randomNumeric(15));
+    identityEntity.setUser(userEntity);
+    identityEntity.setBusiness(businessEntity);
+    identityEntity.setPerson(personEntity);
+    identityEntity.setPostalAddresses(List.of(postalAddressEntity));
+    identityEntity.setStatus(IdentityStatus.REGISTERED.name());
+    identityEntityDaoManager.save(identityEntity);
+
+    final IdentityResponse identityResponse = new IdentityResponse();
+    identityResponse.setInternalIdentity(identityEntity.getInternalIdentity());
+    identityResponse.setMsisdn(businessRegistrationRequest.getMsisdn());
+    identityResponse.setEmailAddress(businessRegistrationRequest.getEmailAddress());
+    identityResponse.setUsername(businessRegistrationRequest.getUsername());
+    identityResponse.setStatus(com.pedistack.identity.v1_0.common.IdentityStatus.REGISTERED);
+
+    return identityResponse;
+  }
+
+  @Override
+  @Transactional
+  public IdentityResponse agentRegistration(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      AgentRegistrationRequest agentRegistrationRequest)
+      throws PedistackException {
+
+    final CountryEntity countryEntity =
+        countryEntityDaoManager.findByAlpha2Code(agentRegistrationRequest.getCountryCode());
+
+    final String userIdentifier =
+        userOperationManager.createUser(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            agentRegistrationRequest.getMsisdn(),
+            agentRegistrationRequest.getEmailAddress(),
+            agentRegistrationRequest.getUsername(),
+            agentRegistrationRequest.getPassword(),
+            globalConfigurationManager.defaultAgentProfileName());
+
+    final UserEntity userEntity = new UserEntity();
+    userEntity.setId(userIdentifier);
+
+    final Person person = new Person();
+    BeanUtils.copyProperties(agentRegistrationRequest, person);
+    final PersonEntity personEntity =
+        personalInformationOperationManager.addOrUpdatePersonalInformation(
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, person);
+
+    final Business business = new Business();
+    BeanUtils.copyProperties(agentRegistrationRequest, business);
+    business.setName(agentRegistrationRequest.getBusinessName());
+    business.setTradingName(agentRegistrationRequest.getBusinessTradingName());
+    final BusinessEntity businessEntity =
+        businessInformationOperationManager.addOrUpdateBusinessInformation(
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, business);
+
+    final PostalAddress postalAddress = new PostalAddress();
+    BeanUtils.copyProperties(agentRegistrationRequest, postalAddress);
+    final AddressEntity postalAddressEntity =
+        addressInformationOperationManager.addOrUpdatePostalAddressInformation(
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, null, postalAddress);
+
+    IdentityEntity parentIdentityEntity = null;
+    if (agentRegistrationRequest.getParentAgentEmailAddress() != null) {
+      parentIdentityEntity =
+          identityEntityDaoManager.findByEmailAddress(
+              agentRegistrationRequest.getParentAgentEmailAddress());
+    } else if (agentRegistrationRequest.getParentAgentMsisdn() != null) {
+      parentIdentityEntity =
+          identityEntityDaoManager.findByMobileNumber(
+              agentRegistrationRequest.getParentAgentMsisdn());
+    } else if (agentRegistrationRequest.getParentAgentUsername() != null) {
+      parentIdentityEntity =
+          identityEntityDaoManager.findByUsername(
+              agentRegistrationRequest.getParentAgentUsername());
+    }
+
+    for (CurrencyEntity currencyEntity : countryEntity.getCurrencies()) {
+      financialAccountOperationManager.createUserAccounts(
+          tenant,
+          sessionUserIdentifier,
+          sessionReference,
+          userIdentifier,
+          currencyEntity.getCode(),
+          AccountType.MAIN,
+          AccountType.LOYALTY,
+          AccountType.COMMISSION);
+    }
+
+    final IdentityEntity identityEntity = new IdentityEntity();
+    identityEntity.setParentIdentity(parentIdentityEntity);
+    identityEntity.setInternalIdentity(RandomStringUtils.randomNumeric(15));
+    identityEntity.setUser(userEntity);
+    identityEntity.setPerson(personEntity);
+    identityEntity.setBusiness(businessEntity);
+    identityEntity.setPostalAddresses(List.of(postalAddressEntity));
+    identityEntity.setStatus(IdentityStatus.REGISTERED.name());
+    identityEntityDaoManager.save(identityEntity);
+
+    final IdentityResponse identityResponse = new IdentityResponse();
+    identityResponse.setInternalIdentity(identityEntity.getInternalIdentity());
+    identityResponse.setMsisdn(agentRegistrationRequest.getMsisdn());
+    identityResponse.setEmailAddress(agentRegistrationRequest.getEmailAddress());
+    identityResponse.setUsername(agentRegistrationRequest.getUsername());
+    identityResponse.setStatus(com.pedistack.identity.v1_0.common.IdentityStatus.REGISTERED);
+
+    return identityResponse;
+  }
+
+  @Override
+  public Identity identityInformationWithMsisdn(
+      String tenant, String sessionUserIdentifier, String sessionReference, String mobileNumber)
+      throws PedistackException {
+    return createIdentityResponse(identityEntityDaoManager.findByMobileNumber(mobileNumber));
+  }
+
+  @Override
+  public Identity identityInformationWithEmailAddress(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException {
+    return createIdentityResponse(identityEntityDaoManager.findByEmailAddress(emailAddress));
+  }
+
+  @Override
+  public Identity identityInformationWithUsername(
+      String tenant, String sessionUserIdentifier, String sessionReference, String username)
+      throws PedistackException {
+    return createIdentityResponse(identityEntityDaoManager.findByUsername(username));
+  }
+
+  @Override
+  public Person updatePersonalInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, Person person)
+      throws PedistackException {
+    final PersonEntity personEntity =
+        personalInformationOperationManager.addOrUpdatePersonalInformation(
+            tenant, sessionUserIdentifier, sessionReference, sessionUserIdentifier, person);
+    return createPersonResponse(personEntity);
+  }
+
+  @Override
+  public Person updatePersonalInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      Person person)
+      throws PedistackException {
+    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    final PersonEntity personEntity =
+        personalInformationOperationManager.addOrUpdatePersonalInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            identityEntity.getUser().getId(),
+            person);
+    return createPersonResponse(personEntity);
+  }
+
+  @Override
+  public Business updateBusinessInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, Business business)
+      throws PedistackException {
+    BusinessEntity businessEntity =
+        businessInformationOperationManager.addOrUpdateBusinessInformation(
+            tenant, sessionUserIdentifier, sessionReference, sessionUserIdentifier, business);
+    return createBusinessResponse(businessEntity);
+  }
+
+  @Override
+  public Business updateBusinessInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      Business business)
+      throws PedistackException {
+    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    BusinessEntity businessEntity =
+        businessInformationOperationManager.addOrUpdateBusinessInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            identityEntity.getUser().getId(),
+            business);
+    return createBusinessResponse(businessEntity);
+  }
+
+  @Override
+  @Transactional
+  public PostalAddress addPostalAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      PostalAddress postalAddress)
+      throws PedistackException {
+    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    final AddressEntity postalAddressEntity =
+        addressInformationOperationManager.addOrUpdatePostalAddressInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            identityEntity.getUser().getId(),
+            null,
+            postalAddress);
+    if (identityEntity.getPostalAddresses() == null) {
+      identityEntity.setPostalAddresses(List.of());
+    }
+    identityEntity.getPostalAddresses().add(postalAddressEntity);
+    return createPostalAddress(postalAddressEntity);
+  }
+
+  @Override
+  public PostalAddress updatePostalAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String postalAddressIdentifier,
+      PostalAddress postalAddress)
+      throws PedistackException {
+    final AddressEntity persistedAddressEntity =
+        addressInformationOperationManager.findAddressInformation(
+            tenant, sessionUserIdentifier, sessionReference, postalAddressIdentifier);
+    final AddressEntity postalAddressEntity =
+        addressInformationOperationManager.addOrUpdatePostalAddressInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            persistedAddressEntity.getUser().getId(),
+            postalAddressIdentifier,
+            postalAddress);
+    return createPostalAddress(postalAddressEntity);
+  }
+
+  @Override
+  @Transactional
+  public void removePostalAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String postalAddressIdentifier)
+      throws PedistackException {
+    final AddressEntity addressEntity =
+        addressInformationOperationManager.findAddressInformation(
+            tenant, sessionUserIdentifier, sessionReference, postalAddressIdentifier);
+    final IdentityEntity identityEntity =
+        identityEntityDaoManager.findByUserIdentifier(addressEntity.getUser().getId());
+    identityEntity.getPostalAddresses().remove(addressEntity);
+    identityEntityDaoManager.save(identityEntity);
+    addressInformationOperationManager.deleteAddressInformation(
+        tenant, sessionUserIdentifier, sessionReference, postalAddressIdentifier);
+  }
+
+  @Override
+  @Transactional
+  public CommunicationAddress addCommunicationAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      CommunicationAddress communicationAddress)
+      throws PedistackException {
+    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    final AddressEntity communicationAddressEntity =
+        addressInformationOperationManager.addOrUpdateCommunicationAddressInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            identityEntity.getUser().getId(),
+            null,
+            communicationAddress);
+    if (identityEntity.getCommunicationAddresses() == null) {
+      identityEntity.setCommunicationAddresses(List.of());
+    }
+    identityEntity.getCommunicationAddresses().add(communicationAddressEntity);
+    return createCommunicationAddress(communicationAddressEntity);
+  }
+
+  @Override
+  @Transactional
+  public CommunicationAddress updateCommunicationAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String communicationAddressIdentifier,
+      CommunicationAddress communicationAddress)
+      throws PedistackException {
+    final AddressEntity persistedAddressEntity =
+        addressInformationOperationManager.findAddressInformation(
+            tenant, sessionUserIdentifier, sessionReference, communicationAddressIdentifier);
+    final AddressEntity communicationAddressEntity =
+        addressInformationOperationManager.addOrUpdateCommunicationAddressInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            persistedAddressEntity.getUser().getId(),
+            communicationAddressIdentifier,
+            communicationAddress);
+    return createCommunicationAddress(communicationAddressEntity);
+  }
+
+  @Override
+  @Transactional
+  public void removeCommunicationAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String communicationAddressIdentifier)
+      throws PedistackException {
+    final AddressEntity addressEntity =
+        addressInformationOperationManager.findAddressInformation(
+            tenant, sessionUserIdentifier, sessionReference, communicationAddressIdentifier);
+    final IdentityEntity identityEntity =
+        identityEntityDaoManager.findByUserIdentifier(addressEntity.getUser().getId());
+    identityEntity.getCommunicationAddresses().remove(addressEntity);
+    identityEntityDaoManager.save(identityEntity);
+    addressInformationOperationManager.deleteAddressInformation(
+        tenant, sessionUserIdentifier, sessionReference, communicationAddressIdentifier);
+  }
+
+  @Override
+  @Transactional
+  public Identification addIdentificationInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      Identification identification)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(mobileNumber, emailAddress, username);
+    final IdentificationEntity identificationEntity =
+        identificationInformationOperationManager.addOrUpdateIdentificationInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            identityEntity.getUser().getId(),
+            null,
+            identification);
+    if (identityEntity.getIdentifications() == null) {
+      identityEntity.setIdentifications(List.of());
+    }
+    identityEntity.getIdentifications().add(identificationEntity);
+    return createIdentificationResponse(identificationEntity);
+  }
+
+  @Override
+  @Transactional
+  public Identification updateIdentificationInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String identificationIdentifier,
+      Identification identification)
+      throws PedistackException {
+    final IdentificationEntity identificationEntity =
+        identificationInformationOperationManager.addOrUpdateIdentificationInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            null,
+            identificationIdentifier,
+            identification);
+    return createIdentificationResponse(identificationEntity);
+  }
+
+  @Override
+  @Transactional
+  public void removeIdentificationInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String identificationIdentifier)
+      throws PedistackException {
+    identificationInformationOperationManager.removeIdentification(
+        tenant, sessionUserIdentifier, sessionReference, identificationIdentifier);
+  }
+
+  private Identity createIdentityResponse(IdentityEntity identityEntity) {
+    final Identity identity = new Identity();
+    if (identityEntity.getPerson() != null) {
+      identity.setPerson(createPersonResponse(identityEntity.getPerson()));
+    }
+    if (identityEntity.getDeveloperInformation() != null) {
+      identity.setDeveloper(createDeveloperResponse(identityEntity.getDeveloperInformation()));
+    }
+    if (identityEntity.getSocialMediaAccount() != null) {
+      identity.setSocialMedia(createSocialMediaResponse(identityEntity.getSocialMediaAccount()));
+    }
+    identity.setBusiness(createBusinessResponse(identityEntity.getBusiness()));
+    identity.setIdentifications(
+        identityEntity.getIdentifications().stream()
+            .map(this::createIdentificationResponse)
+            .toList());
+    identity.setPostalAddresses(
+        identityEntity.getPostalAddresses().stream().map(this::createPostalAddress).toList());
+    identity.setCommunicationAddresses(
+        identityEntity.getCommunicationAddresses().stream()
+            .map(this::createCommunicationAddress)
+            .toList());
+    identity.setInternalIdentity(identityEntity.getInternalIdentity());
+    identity.setType(IdentityType.valueOf(identityEntity.getUser().getProfile().getType()));
+    return identity;
+  }
+
+  private Person createPersonResponse(final PersonEntity personEntity) {
+    if (personEntity != null) {
+      final Person person = new Person();
+      BeanUtils.copyProperties(personEntity, person);
+      if (personEntity.getMaritalStatus() != null) {
+        person.setMaritalStatus(MaritalStatus.valueOf(personEntity.getMaritalStatus()));
+      }
+      if (personEntity.getLanguageCode() != null) {
+        person.setLanguageCode(LanguageCode.valueOf(personEntity.getLanguageCode()));
+      }
+      if (personEntity.getGender() != null) {
+        person.setGender(GenderCode.valueOf(personEntity.getGender()));
+      }
+      if (personEntity.getTaxationCountryCode() != null) {
+        person.setTaxationCountryCode(CountryCode.valueOf(personEntity.getTaxationCountryCode()));
+      }
+      if (personEntity.getBirthCountryCode() != null) {
+        person.setBirthCountryCode(CountryCode.valueOf(personEntity.getBirthCountryCode()));
+      }
+      return person;
+    }
+    return null;
+  }
+
+  private Developer createDeveloperResponse(DeveloperInformationEntity developerInformationEntity) {
+    if (developerInformationEntity != null) {
+      final Developer developer = new Developer();
+      BeanUtils.copyProperties(developerInformationEntity, developer);
+      return developer;
+    }
+    return null;
+  }
+
+  private SocialMedia createSocialMediaResponse(SocialMediaAccountEntity socialMediaAccountEntity) {
+    if (socialMediaAccountEntity != null) {
+      final SocialMedia socialMedia = new SocialMedia();
+      BeanUtils.copyProperties(socialMediaAccountEntity, socialMedia);
+      return socialMedia;
+    }
+    return null;
+  }
+
+  private Business createBusinessResponse(BusinessEntity businessEntity) {
+    if (businessEntity != null) {
+      final Business business = new Business();
+      BeanUtils.copyProperties(businessEntity, business);
+      business.setBusinessType(BusinessType.valueOf(businessEntity.getBusinessType()));
+      business.setResidentCountryCode(CountryCode.valueOf(businessEntity.getResidentCountryCode()));
+      business.setRegistrationType(RegistrationType.valueOf(businessEntity.getRegistrationType()));
+      business.setIndustry(Industry.valueOf(businessEntity.getIndustry()));
+      if (businessEntity.getPostalAddress() != null) {
+        business.setPostalAddress(createPostalAddress(businessEntity.getPostalAddress()));
+      }
+      if (businessEntity.getCommunicationAddress() != null) {
+        business.setCommunicationAddress(
+            createCommunicationAddress(businessEntity.getCommunicationAddress()));
+      }
+      return business;
+    }
+    return null;
+  }
+
+  private PostalAddress createPostalAddress(AddressEntity addressEntity) {
+    if (addressEntity != null) {
+      final PostalAddress postalAddress = new PostalAddress();
+      BeanUtils.copyProperties(addressEntity, postalAddress);
+      postalAddress.setCountryCode(CountryCode.valueOf(addressEntity.getCountryCode()));
+      return postalAddress;
+    }
+    return null;
+  }
+
+  private CommunicationAddress createCommunicationAddress(AddressEntity addressEntity) {
+    if (addressEntity != null) {
+      final CommunicationAddress communicationAddress = new CommunicationAddress();
+      BeanUtils.copyProperties(addressEntity, communicationAddress);
+      return communicationAddress;
+    }
+    return null;
+  }
+
+  private Identification createIdentificationResponse(IdentificationEntity identificationEntity) {
+    if (identificationEntity != null) {
+      final Identification identification = new Identification();
+      BeanUtils.copyProperties(identificationEntity, identification);
+      identification.setType(IdentificationType.valueOf(identificationEntity.getType()));
+      return identification;
+    }
+    return null;
+  }
+
+  private IdentityEntity identityEntityInformation(
+      String msisdn, String emailAddress, String username) throws PedistackException {
+    IdentityEntity identityEntity = null;
+    if (msisdn != null) {
+      identityEntity = identityEntityDaoManager.findByMobileNumber(msisdn);
+    } else if (username != null) {
+      identityEntity = identityEntityDaoManager.findByUsername(username);
+    } else if (emailAddress != null) {
+      identityEntity = identityEntityDaoManager.findByEmailAddress(emailAddress);
+    }
+    if (identityEntity == null) {
+      throw PedistackException.createInternalErrorException(
+          PedistackErrorDescriptions.IDENTITY_INFORMATION_NOT_FOUND_ERROR_DESCRIPTION);
+    }
+    return identityEntity;
+  }
+}

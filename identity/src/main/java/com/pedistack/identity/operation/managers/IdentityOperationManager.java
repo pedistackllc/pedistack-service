@@ -1,0 +1,144 @@
+package com.pedistack.identity.operation.managers;
+
+import com.pedistack.common.exception.PedistackException;
+import com.pedistack.identity.v1_0.*;
+import com.pedistack.identity.v1_0.common.*;
+
+public interface IdentityOperationManager {
+
+  IdentityResponse customerRegistration(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      CustomerRegistrationRequest customerRegistrationRequest)
+      throws PedistackException;
+
+  IdentityResponse businessRegistration(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      BusinessRegistrationRequest businessRegistrationRequest)
+      throws PedistackException;
+
+  IdentityResponse agentRegistration(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      AgentRegistrationRequest agentRegistrationRequest)
+      throws PedistackException;
+
+  Identity identityInformationWithMsisdn(
+      String tenant, String sessionUserIdentifier, String sessionReference, String mobileNumber)
+      throws PedistackException;
+
+  Identity identityInformationWithEmailAddress(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException;
+
+  Identity identityInformationWithUsername(
+      String tenant, String sessionUserIdentifier, String sessionReference, String username)
+      throws PedistackException;
+
+  Person updatePersonalInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, Person person)
+      throws PedistackException;
+
+  Person updatePersonalInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      Person person)
+      throws PedistackException;
+
+  Business updateBusinessInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, Business business)
+      throws PedistackException;
+
+  Business updateBusinessInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      Business business)
+      throws PedistackException;
+
+  PostalAddress addPostalAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      PostalAddress postalAddress)
+      throws PedistackException;
+
+  PostalAddress updatePostalAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String postalAddressIdentifier,
+      PostalAddress postalAddress)
+      throws PedistackException;
+
+  void removePostalAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String postalAddressIdentifier)
+      throws PedistackException;
+
+  CommunicationAddress addCommunicationAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      CommunicationAddress communicationAddress)
+      throws PedistackException;
+
+  CommunicationAddress updateCommunicationAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String communicationAddressIdentifier,
+      CommunicationAddress communicationAddress)
+      throws PedistackException;
+
+  void removeCommunicationAddressInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String communicationAddressIdentifier)
+      throws PedistackException;
+
+  Identification addIdentificationInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress,
+      Identification identification)
+      throws PedistackException;
+
+  Identification updateIdentificationInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String identificationIdentifier,
+      Identification identification)
+      throws PedistackException;
+
+  void removeIdentificationInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String identificationIdentifier)
+      throws PedistackException;
+}
