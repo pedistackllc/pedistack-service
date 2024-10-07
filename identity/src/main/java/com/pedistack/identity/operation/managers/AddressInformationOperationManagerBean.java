@@ -8,7 +8,6 @@ import com.pedistack.db.oauth.UserEntityDaoManager;
 import com.pedistack.identity.v1_0.common.AddressType;
 import com.pedistack.identity.v1_0.common.CommunicationAddress;
 import com.pedistack.identity.v1_0.common.PostalAddress;
-import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,10 +31,14 @@ public class AddressInformationOperationManagerBean implements AddressInformatio
       String addressIdentifier,
       PostalAddress postalAddress)
       throws PedistackException {
-    final AddressEntity addressEntity =
-        Optional.ofNullable(addressEntityDaoManager.findByIdentifier(addressIdentifier))
-            .orElse(new AddressEntity());
-    if (addressEntity.getUser() != null && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
+    AddressEntity addressEntity;
+    if (addressIdentifier != null) {
+      addressEntity = addressEntityDaoManager.findByIdentifier(addressIdentifier);
+    } else {
+      addressEntity = new AddressEntity();
+    }
+    if (addressEntity.getUser() != null
+        && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
       throw PedistackException.createInternalErrorException(
           PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
     }
@@ -65,7 +68,7 @@ public class AddressInformationOperationManagerBean implements AddressInformatio
       if (userIdentifier != null) {
         addressEntity.setUser(userEntityDaoManager.findByIdentifier(userIdentifier));
       }
-      addressEntityDaoManager.save(addressEntity);
+      return addressEntityDaoManager.save(addressEntity);
     }
     return addressEntity;
   }
@@ -79,10 +82,14 @@ public class AddressInformationOperationManagerBean implements AddressInformatio
       String addressIdentifier,
       CommunicationAddress communicationAddress)
       throws PedistackException {
-    final AddressEntity addressEntity =
-        Optional.ofNullable(addressEntityDaoManager.findByIdentifier(addressIdentifier))
-            .orElse(new AddressEntity());
-    if (addressEntity.getUser() != null && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
+    AddressEntity addressEntity;
+    if (addressIdentifier != null) {
+      addressEntity = addressEntityDaoManager.findByIdentifier(addressIdentifier);
+    } else {
+      addressEntity = new AddressEntity();
+    }
+    if (addressEntity.getUser() != null
+        && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
       throw PedistackException.createInternalErrorException(
           PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
     }
@@ -106,7 +113,7 @@ public class AddressInformationOperationManagerBean implements AddressInformatio
       if (userIdentifier != null) {
         addressEntity.setUser(userEntityDaoManager.findByIdentifier(userIdentifier));
       }
-      addressEntityDaoManager.save(addressEntity);
+      return addressEntityDaoManager.save(addressEntity);
     }
     return addressEntity;
   }
@@ -119,7 +126,8 @@ public class AddressInformationOperationManagerBean implements AddressInformatio
       String addressIdentifier)
       throws PedistackException {
     final AddressEntity addressEntity = addressEntityDaoManager.findByIdentifier(addressIdentifier);
-    if (addressEntity.getUser() != null && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
+    if (addressEntity.getUser() != null
+        && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
       throw PedistackException.createInternalErrorException(
           PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
     }
@@ -134,7 +142,8 @@ public class AddressInformationOperationManagerBean implements AddressInformatio
       String addressIdentifier)
       throws PedistackException {
     final AddressEntity addressEntity = addressEntityDaoManager.findByIdentifier(addressIdentifier);
-    if (addressEntity.getUser() != null && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
+    if (addressEntity.getUser() != null
+        && !addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
       throw PedistackException.createInternalErrorException(
           PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
     }

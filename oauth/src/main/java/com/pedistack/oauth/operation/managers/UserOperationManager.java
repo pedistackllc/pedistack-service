@@ -30,4 +30,20 @@ public interface UserOperationManager {
       String emailAddress,
       String activationToken)
       throws PedistackException;
+
+  String emailActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException;
+
+  String msisdnActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException;
+
+  void resendEmailAddressActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException;
+
+  void resendMsisdnActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException;
 }

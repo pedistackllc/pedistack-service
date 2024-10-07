@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Api(tags = {"Oauth"})
-@RequestMapping("v1")
 @RestController
 public class OauthOperations {
 

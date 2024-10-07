@@ -10,6 +10,7 @@ import com.pedistack.db.oauth.*;
 import com.pedistack.oauth.v1_0.common.ProfileType;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -40,6 +41,7 @@ public class AdminSetupManager implements ApplicationListener<ContextRefreshedEv
       installDefaultAdministratorProfiles();
       installDefaultBusinessMerchantProfiles();
       installDefaultPartnerProfiles();
+      installDefaultAgentProfiles();
       installDefaultSuperAdministratorUser();
     } catch (Exception exception) {
       throw new RuntimeException(exception);
@@ -88,9 +90,9 @@ public class AdminSetupManager implements ApplicationListener<ContextRefreshedEv
   }
 
   void installDefaultBusinessMerchantProfiles() throws Exception {
-    if (profileEntityDaoManager
-        .findByNameReturnOptional("Default Business Merchant Profile")
-        .isEmpty()) {
+    final Optional<ProfileEntity> profileEntityOptional =
+        profileEntityDaoManager.findByNameReturnOptional("Default Business Merchant Profile");
+    if (profileEntityOptional.isEmpty()) {
       final ProfileEntity profileEntity = new ProfileEntity();
       profileEntity.setName("Default Business Merchant Profile");
       profileEntity.setType(ProfileType.BUSINESS.name());
@@ -101,13 +103,50 @@ public class AdminSetupManager implements ApplicationListener<ContextRefreshedEv
               .toList());
       profileEntity.setAdditionalInformation(new HashMap<>());
       profileEntityDaoManager.save(profileEntity);
+    } else {
+      final ProfileEntity businessProfileEntity = profileEntityOptional.get();
+      businessProfileEntity
+          .getPermissions()
+          .addAll(
+              Arrays.stream(AuthorizationPermissions.values())
+                  .map(AuthorizationPermissions::name)
+                  .filter(name -> !businessProfileEntity.getPermissions().contains(name))
+                  .toList());
+      profileEntityDaoManager.save(businessProfileEntity);
+    }
+  }
+
+  void installDefaultAgentProfiles() throws Exception {
+    final Optional<ProfileEntity> profileEntityOptional =
+        profileEntityDaoManager.findByNameReturnOptional("Default Agent Profile");
+    if (profileEntityOptional.isEmpty()) {
+      final ProfileEntity profileEntity = new ProfileEntity();
+      profileEntity.setName("Default Agent Profile");
+      profileEntity.setType(ProfileType.AGENT.name());
+      profileEntity.setDescription("The default agent profile");
+      profileEntity.setPermissions(
+          Arrays.stream(AuthorizationPermissions.values())
+              .map(AuthorizationPermissions::name)
+              .toList());
+      profileEntity.setAdditionalInformation(new HashMap<>());
+      profileEntityDaoManager.save(profileEntity);
+    } else {
+      final ProfileEntity agentProfileEntity = profileEntityOptional.get();
+      agentProfileEntity
+          .getPermissions()
+          .addAll(
+              Arrays.stream(AuthorizationPermissions.values())
+                  .map(AuthorizationPermissions::name)
+                  .filter(name -> !agentProfileEntity.getPermissions().contains(name))
+                  .toList());
+      profileEntityDaoManager.save(agentProfileEntity);
     }
   }
 
   void installDefaultAdministratorProfiles() throws Exception {
-    if (profileEntityDaoManager
-        .findByNameReturnOptional("Default Super Administrator Profile")
-        .isEmpty()) {
+    final Optional<ProfileEntity> superAdministratorProfileEntityOptional =
+        profileEntityDaoManager.findByNameReturnOptional("Default Super Administrator Profile");
+    if (superAdministratorProfileEntityOptional.isEmpty()) {
       final ProfileEntity profileEntity = new ProfileEntity();
       profileEntity.setName("Default Super Administrator Profile");
       profileEntity.setType(ProfileType.SUPER_ADMINISTRATOR.name());
@@ -119,6 +158,17 @@ public class AdminSetupManager implements ApplicationListener<ContextRefreshedEv
               .toList());
       profileEntity.setAdditionalInformation(new HashMap<>());
       profileEntityDaoManager.save(profileEntity);
+    } else {
+      final ProfileEntity superAdministratorProfileEntity =
+          superAdministratorProfileEntityOptional.get();
+      superAdministratorProfileEntity
+          .getPermissions()
+          .addAll(
+              Arrays.stream(AuthorizationPermissions.values())
+                  .map(AuthorizationPermissions::name)
+                  .filter(name -> !superAdministratorProfileEntity.getPermissions().contains(name))
+                  .toList());
+      profileEntityDaoManager.save(superAdministratorProfileEntity);
     }
   }
 }

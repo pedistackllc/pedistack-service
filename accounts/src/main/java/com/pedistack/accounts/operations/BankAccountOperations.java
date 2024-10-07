@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 @Api(tags = {"Accounts"})
 @RestController
-@RequestMapping("v1")
 public class BankAccountOperations {
 
   private final BankAccountOperationManager bankAccountOperationManager;

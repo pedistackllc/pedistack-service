@@ -36,7 +36,7 @@ public final class AgentRegistrationRequest implements Serializable {
   private String registrationNumber;
   private String taxIdentificationNumber;
   private String website;
-  private String residentCountryCode;
+  private CountryCode residentCountryCode;
 
   private String addressLine;
   private String streetName;
@@ -44,7 +44,7 @@ public final class AgentRegistrationRequest implements Serializable {
   private String postCode;
   private String town;
   private String province;
-  private String countryCode;
+  private CountryCode countryCode;
 
   private String parentAgentMsisdn;
   private String parentAgentUsername;
@@ -170,11 +170,11 @@ public final class AgentRegistrationRequest implements Serializable {
     this.website = website;
   }
 
-  public String getResidentCountryCode() {
+  public CountryCode getResidentCountryCode() {
     return residentCountryCode;
   }
 
-  public void setResidentCountryCode(String residentCountryCode) {
+  public void setResidentCountryCode(CountryCode residentCountryCode) {
     this.residentCountryCode = residentCountryCode;
   }
 
@@ -226,11 +226,11 @@ public final class AgentRegistrationRequest implements Serializable {
     this.province = province;
   }
 
-  public String getCountryCode() {
+  public CountryCode getCountryCode() {
     return countryCode;
   }
 
-  public void setCountryCode(String countryCode) {
+  public void setCountryCode(CountryCode countryCode) {
     this.countryCode = countryCode;
   }
 

@@ -17,6 +17,7 @@ import com.pedistack.oauth.operation.managers.UserOperationManager;
 import com.pedistack.v1_0.common.CountryCode;
 import com.pedistack.v1_0.common.LanguageCode;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
@@ -155,7 +156,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     BeanUtils.copyProperties(businessRegistrationRequest, business);
     final BusinessEntity businessEntity =
         businessInformationOperationManager.addOrUpdateBusinessInformation(
-            tenant, sessionUserIdentifier, sessionReference, userIdentifier, business);
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, null, business);
 
     final PostalAddress postalAddress = new PostalAddress();
     BeanUtils.copyProperties(businessRegistrationRequest, postalAddress);
@@ -204,7 +205,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       throws PedistackException {
 
     final CountryEntity countryEntity =
-        countryEntityDaoManager.findByAlpha2Code(agentRegistrationRequest.getCountryCode());
+        countryEntityDaoManager.findByAlpha2Code(agentRegistrationRequest.getCountryCode().name());
 
     final String userIdentifier =
         userOperationManager.createUser(
@@ -230,9 +231,11 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     BeanUtils.copyProperties(agentRegistrationRequest, business);
     business.setName(agentRegistrationRequest.getBusinessName());
     business.setTradingName(agentRegistrationRequest.getBusinessTradingName());
+    business.setResidentCountryCode(agentRegistrationRequest.getResidentCountryCode());
+
     final BusinessEntity businessEntity =
         businessInformationOperationManager.addOrUpdateBusinessInformation(
-            tenant, sessionUserIdentifier, sessionReference, userIdentifier, business);
+            tenant, sessionUserIdentifier, sessionReference, userIdentifier, null, business);
 
     final PostalAddress postalAddress = new PostalAddress();
     BeanUtils.copyProperties(agentRegistrationRequest, postalAddress);
@@ -288,6 +291,14 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
   }
 
   @Override
+  public Identity identityInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference)
+      throws PedistackException {
+    return createIdentityResponse(
+        identityEntityDaoManager.findByUserIdentifier(sessionUserIdentifier));
+  }
+
+  @Override
   public Identity identityInformationWithMsisdn(
       String tenant, String sessionUserIdentifier, String sessionReference, String mobileNumber)
       throws PedistackException {
@@ -328,7 +339,8 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       String emailAddress,
       Person person)
       throws PedistackException {
-    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    IdentityEntity identityEntity =
+        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
     final PersonEntity personEntity =
         personalInformationOperationManager.addOrUpdatePersonalInformation(
             tenant,
@@ -345,7 +357,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       throws PedistackException {
     BusinessEntity businessEntity =
         businessInformationOperationManager.addOrUpdateBusinessInformation(
-            tenant, sessionUserIdentifier, sessionReference, sessionUserIdentifier, business);
+            tenant, sessionUserIdentifier, sessionReference, sessionUserIdentifier, null, business);
     return createBusinessResponse(businessEntity);
   }
 
@@ -359,13 +371,17 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       String emailAddress,
       Business business)
       throws PedistackException {
-    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    IdentityEntity identityEntity =
+        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
     BusinessEntity businessEntity =
         businessInformationOperationManager.addOrUpdateBusinessInformation(
             tenant,
             sessionUserIdentifier,
             sessionReference,
             identityEntity.getUser().getId(),
+            Optional.ofNullable(identityEntity.getBusiness())
+                .map(BusinessEntity::getId)
+                .orElse(null),
             business);
     return createBusinessResponse(businessEntity);
   }
@@ -381,7 +397,8 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       String emailAddress,
       PostalAddress postalAddress)
       throws PedistackException {
-    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    IdentityEntity identityEntity =
+        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
     final AddressEntity postalAddressEntity =
         addressInformationOperationManager.addOrUpdatePostalAddressInformation(
             tenant,
@@ -395,6 +412,20 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     }
     identityEntity.getPostalAddresses().add(postalAddressEntity);
     return createPostalAddress(postalAddressEntity);
+  }
+
+  @Override
+  public List<PostalAddress> postalAddresses(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
+    return identityEntity.getPostalAddresses().stream().map(this::createPostalAddress).toList();
   }
 
   @Override
@@ -430,6 +461,10 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     final AddressEntity addressEntity =
         addressInformationOperationManager.findAddressInformation(
             tenant, sessionUserIdentifier, sessionReference, postalAddressIdentifier);
+    if (!addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
+      throw PedistackException.createUnauthorizedException(
+          PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
+    }
     final IdentityEntity identityEntity =
         identityEntityDaoManager.findByUserIdentifier(addressEntity.getUser().getId());
     identityEntity.getPostalAddresses().remove(addressEntity);
@@ -449,7 +484,8 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       String emailAddress,
       CommunicationAddress communicationAddress)
       throws PedistackException {
-    IdentityEntity identityEntity = identityEntityInformation(mobileNumber, emailAddress, username);
+    IdentityEntity identityEntity =
+        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
     final AddressEntity communicationAddressEntity =
         addressInformationOperationManager.addOrUpdateCommunicationAddressInformation(
             tenant,
@@ -463,6 +499,22 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     }
     identityEntity.getCommunicationAddresses().add(communicationAddressEntity);
     return createCommunicationAddress(communicationAddressEntity);
+  }
+
+  @Override
+  public List<CommunicationAddress> communicationAddresses(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
+    return identityEntity.getCommunicationAddresses().stream()
+        .map(this::createCommunicationAddress)
+        .toList();
   }
 
   @Override
@@ -499,6 +551,10 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     final AddressEntity addressEntity =
         addressInformationOperationManager.findAddressInformation(
             tenant, sessionUserIdentifier, sessionReference, communicationAddressIdentifier);
+    if (!addressEntity.getUser().getId().equals(sessionUserIdentifier)) {
+      throw PedistackException.createUnauthorizedException(
+          PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
+    }
     final IdentityEntity identityEntity =
         identityEntityDaoManager.findByUserIdentifier(addressEntity.getUser().getId());
     identityEntity.getCommunicationAddresses().remove(addressEntity);
@@ -519,7 +575,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       Identification identification)
       throws PedistackException {
     final IdentityEntity identityEntity =
-        identityEntityInformation(mobileNumber, emailAddress, username);
+        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
     final IdentificationEntity identificationEntity =
         identificationInformationOperationManager.addOrUpdateIdentificationInformation(
             tenant,
@@ -563,12 +619,85 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       String sessionReference,
       String identificationIdentifier)
       throws PedistackException {
+    final IdentificationEntity identificationEntity =
+        identificationInformationOperationManager.identificationInformation(
+            tenant, sessionUserIdentifier, sessionReference, identificationIdentifier);
+    if (!identificationEntity.getUser().getId().equals(sessionUserIdentifier)) {
+      throw PedistackException.createUnauthorizedException(
+          PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
+    }
+    final IdentityEntity identityEntity =
+        identityEntityDaoManager.findByUserIdentifier(identificationEntity.getUser().getId());
+    identityEntity.getIdentifications().remove(identificationEntity);
+    identityEntityDaoManager.save(identityEntity);
     identificationInformationOperationManager.removeIdentification(
         tenant, sessionUserIdentifier, sessionReference, identificationIdentifier);
   }
 
+  @Override
+  @Transactional
+  public void identityActivation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      IdentityActivationRequest identityActivationRequest)
+      throws PedistackException {
+    if (identityActivationRequest.getMsisdn() != null) {
+      userOperationManager.msisdnActivation(
+          tenant,
+          sessionUserIdentifier,
+          sessionReference,
+          identityActivationRequest.getMsisdn(),
+          identityActivationRequest.getOtp());
+    } else if (identityActivationRequest.getEmailAddress() != null) {
+      userOperationManager.emailAddressActivation(
+          tenant,
+          sessionUserIdentifier,
+          sessionReference,
+          identityActivationRequest.getEmailAddress(),
+          identityActivationRequest.getOtp());
+    }
+  }
+
+  @Override
+  public String msisdnActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException {
+    return userOperationManager.msisdnActivationOtp(
+        tenant, sessionUserIdentifier, sessionReference, msisdn);
+  }
+
+  @Override
+  public String emailActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException {
+    return userOperationManager.emailActivationOtp(
+        tenant, sessionUserIdentifier, sessionReference, emailAddress);
+  }
+
+  @Override
+  public void resendMsisdnActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException {
+    userOperationManager.resendMsisdnActivationOtp(
+        tenant, sessionUserIdentifier, sessionReference, msisdn);
+  }
+
+  @Override
+  public void resendEmailActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException {
+    userOperationManager.resendEmailAddressActivationOtp(
+        tenant, sessionUserIdentifier, sessionReference, emailAddress);
+  }
+
   private Identity createIdentityResponse(IdentityEntity identityEntity) {
     final Identity identity = new Identity();
+
+    identity.setEmailAddress(identityEntity.getUser().getEmailAddress());
+    identity.setMsisdn(identityEntity.getUser().getMobileNumber());
+    identity.setUsername(identityEntity.getUser().getUsername());
+
     if (identityEntity.getPerson() != null) {
       identity.setPerson(createPersonResponse(identityEntity.getPerson()));
     }
@@ -591,6 +720,8 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
             .toList());
     identity.setInternalIdentity(identityEntity.getInternalIdentity());
     identity.setType(IdentityType.valueOf(identityEntity.getUser().getProfile().getType()));
+    identity.setStatus(
+        com.pedistack.identity.v1_0.common.IdentityStatus.valueOf(identityEntity.getStatus()));
     return identity;
   }
 
@@ -661,6 +792,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       final PostalAddress postalAddress = new PostalAddress();
       BeanUtils.copyProperties(addressEntity, postalAddress);
       postalAddress.setCountryCode(CountryCode.valueOf(addressEntity.getCountryCode()));
+      postalAddress.setId(addressEntity.getId());
       return postalAddress;
     }
     return null;
@@ -670,6 +802,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     if (addressEntity != null) {
       final CommunicationAddress communicationAddress = new CommunicationAddress();
       BeanUtils.copyProperties(addressEntity, communicationAddress);
+      communicationAddress.setId(addressEntity.getId());
       return communicationAddress;
     }
     return null;
@@ -680,13 +813,15 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       final Identification identification = new Identification();
       BeanUtils.copyProperties(identificationEntity, identification);
       identification.setType(IdentificationType.valueOf(identificationEntity.getType()));
+      identification.setId(identificationEntity.getId());
       return identification;
     }
     return null;
   }
 
   private IdentityEntity identityEntityInformation(
-      String msisdn, String emailAddress, String username) throws PedistackException {
+      String msisdn, String emailAddress, String username, String userIdentifier)
+      throws PedistackException {
     IdentityEntity identityEntity = null;
     if (msisdn != null) {
       identityEntity = identityEntityDaoManager.findByMobileNumber(msisdn);
@@ -694,6 +829,8 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       identityEntity = identityEntityDaoManager.findByUsername(username);
     } else if (emailAddress != null) {
       identityEntity = identityEntityDaoManager.findByEmailAddress(emailAddress);
+    } else if (userIdentifier != null) {
+      identityEntity = identityEntityDaoManager.findByUserIdentifier(userIdentifier);
     }
     if (identityEntity == null) {
       throw PedistackException.createInternalErrorException(

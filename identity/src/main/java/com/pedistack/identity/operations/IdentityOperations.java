@@ -9,13 +9,13 @@ import com.pedistack.identity.v1_0.common.*;
 import com.pedistack.oauth.operation.managers.AuthorizationOperationManager;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Api(tags = {"Identity"})
-@RequestMapping("v1")
 @RestController
 public class IdentityOperations {
 
@@ -27,6 +27,107 @@ public class IdentityOperations {
       IdentityOperationManager identityOperationManager) {
     this.authorizationOperationManager = authorizationOperationManager;
     this.identityOperationManager = identityOperationManager;
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Activate a new identity")
+  @PostMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/activation")
+  public ResponseEntity<GenericResponse<Void>> identityActivation(
+      @RequestHeader HttpHeaders httpHeaders,
+      @RequestBody IdentityActivationRequest identityActivationRequest)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.IDENTITY_ACTIVATION_PERMISSION);
+    identityOperationManager.identityActivation(
+        null,
+        authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+        authorizationOperationManager.sessionReference(httpHeaders),
+        identityActivationRequest);
+    return ResponseEntity.ok(GenericResponse.createResponse("Identity activated successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Msisdn activation token information")
+  @GetMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/msisdn/{msisdn}/activation/otp")
+  public ResponseEntity<GenericResponse<String>> msisdnActivationOtp(
+      @RequestHeader HttpHeaders httpHeaders, @PathVariable("msisdn") String msisdn)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_IDENTITY_ACTIVATION_OTP_PERMISSION);
+    final String otp =
+        identityOperationManager.msisdnActivationToken(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            msisdn);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(otp, "Identity token fetched successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Email address activation token information")
+  @GetMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/email/{emailAddress}/activation/otp")
+  public ResponseEntity<GenericResponse<String>> emailActivationOtp(
+      @RequestHeader HttpHeaders httpHeaders, @PathVariable("emailAddress") String emailAddress)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_IDENTITY_ACTIVATION_OTP_PERMISSION);
+    final String otp =
+        identityOperationManager.emailActivationToken(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            emailAddress);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(otp, "Identity token fetched successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Resend msisdn activation token information")
+  @GetMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/msisdn/{msisdn}/activation/otp/refresh")
+  public ResponseEntity<GenericResponse<String>> resendMsisdnActivationOtp(
+      @RequestHeader HttpHeaders httpHeaders, @PathVariable("msisdn") String msisdn)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.RESEND_IDENTITY_ACTIVATION_OTP_PERMISSION);
+    identityOperationManager.resendMsisdnActivationToken(
+        null,
+        authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+        authorizationOperationManager.sessionReference(httpHeaders),
+        msisdn);
+    return ResponseEntity.ok(GenericResponse.createResponse("Identity token sent successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Resend email address activation token information")
+  @GetMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/email/{emailAddress}/activation/otp/refresh")
+  public ResponseEntity<GenericResponse<Void>> resendEmailActivationOtp(
+      @RequestHeader HttpHeaders httpHeaders, @PathVariable("emailAddress") String emailAddress)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.RESEND_IDENTITY_ACTIVATION_OTP_PERMISSION);
+    identityOperationManager.resendEmailActivationToken(
+        null,
+        authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+        authorizationOperationManager.sessionReference(httpHeaders),
+        emailAddress);
+    return ResponseEntity.ok(GenericResponse.createResponse("Identity token sent successfully"));
   }
 
   @Operation(
@@ -50,6 +151,23 @@ public class IdentityOperations {
             customerRegistrationRequest);
     return ResponseEntity.ok(
         GenericResponse.createResponse(identityResponse, "Customer registered successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Get identity information of an authorized user")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "id")
+  public ResponseEntity<GenericResponse<Identity>> identityInformation(
+      @RequestHeader HttpHeaders httpHeaders) throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_IDENTITY_INFORMATION_PERMISSION);
+    final Identity identity =
+        identityOperationManager.identityInformation(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders));
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(identity, "Customer information fetched successfully"));
   }
 
   @Operation(
@@ -371,6 +489,52 @@ public class IdentityOperations {
 
   @Operation(
       tags = {"Identity"},
+      summary = "Add postal address for an authorized identity")
+  @PostMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/address/postal")
+  public ResponseEntity<GenericResponse<PostalAddress>> addPostalAddressInformation(
+      @RequestHeader HttpHeaders httpHeaders, @RequestBody PostalAddress postalAddress)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.ADD_IDENTITY_POSTAL_ADDRESS_PERMISSION);
+    final PostalAddress persistedPostalAddress =
+        identityOperationManager.addPostalAddressInformation(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            null,
+            null,
+            null,
+            postalAddress);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(
+            persistedPostalAddress, "Postal address created successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Fetch the list of postal addresses of an authorized user")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "id/address/postal")
+  public ResponseEntity<GenericResponse<List<PostalAddress>>> postalAddresses(
+      @RequestHeader HttpHeaders httpHeaders) throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_IDENTITY_POSTAL_ADDRESSES_PERMISSION);
+    final List<PostalAddress> postalAddresses =
+        identityOperationManager.postalAddresses(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            null,
+            null,
+            null);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(postalAddresses, "Postal addresses fetched successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
       summary = "Add postal address for an identity with email address")
   @PostMapping(
       produces = MediaType.APPLICATION_JSON_VALUE,
@@ -498,6 +662,33 @@ public class IdentityOperations {
 
   @Operation(
       tags = {"Identity"},
+      summary = "Add communication address of an authorized identity")
+  @PostMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/address/communication")
+  public ResponseEntity<GenericResponse<CommunicationAddress>> addCommunicationAddressInformation(
+      @RequestHeader HttpHeaders httpHeaders,
+      @RequestBody CommunicationAddress communicationAddress)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.ADD_IDENTITY_COMMUNICATION_ADDRESS_PERMISSION);
+    final CommunicationAddress persistedCommunicationAddress =
+        identityOperationManager.addCommunicationAddressInformation(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            null,
+            null,
+            null,
+            communicationAddress);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(
+            persistedCommunicationAddress, "Communication address created successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
       summary = "Add communication address of an identity with an email address")
   @PostMapping(
       produces = MediaType.APPLICATION_JSON_VALUE,
@@ -522,7 +713,7 @@ public class IdentityOperations {
             communicationAddress);
     return ResponseEntity.ok(
         GenericResponse.createResponse(
-            persistedCommunicationAddress, "Postal address created successfully"));
+            persistedCommunicationAddress, "Communication address created successfully"));
   }
 
   @Operation(
@@ -612,6 +803,27 @@ public class IdentityOperations {
 
   @Operation(
       tags = {"Identity"},
+      summary = "Fetch the list of communication addresses of an authorized user")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "id/address/communication")
+  public ResponseEntity<GenericResponse<List<CommunicationAddress>>> communicationAddresses(
+      @RequestHeader HttpHeaders httpHeaders) throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_IDENTITY_COMMUNICATION_ADDRESSES_PERMISSION);
+    final List<CommunicationAddress> communicationAddresses =
+        identityOperationManager.communicationAddresses(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            null,
+            null,
+            null);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(
+            communicationAddresses, "Communication addresses fetched successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
       summary = "Delete communication address of an identity")
   @DeleteMapping(
       produces = MediaType.APPLICATION_JSON_VALUE,
@@ -629,6 +841,32 @@ public class IdentityOperations {
         communicationAddressIdentifier);
     return ResponseEntity.ok(
         GenericResponse.createResponse("Communication address removed successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Add identification information of an authorized user")
+  @PostMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/identification")
+  public ResponseEntity<GenericResponse<Identification>> addIdentificationInformation(
+      @RequestHeader HttpHeaders httpHeaders, @RequestBody Identification identification)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.ADD_IDENTITY_IDENTIFICATION_PERMISSION);
+    final Identification persistedIdentification =
+        identityOperationManager.addIdentificationInformation(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            null,
+            null,
+            null,
+            identification);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(
+            persistedIdentification, "Identification created successfully"));
   }
 
   @Operation(

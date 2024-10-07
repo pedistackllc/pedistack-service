@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Api(tags = {"Admins"})
-@RequestMapping("v1")
 @RestController
 public class AdminUserOperations {
 

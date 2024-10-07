@@ -5,6 +5,7 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import com.pedistack.common.io.ErrorResponse;
 import com.pedistack.common.io.GenericResponse;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,8 @@ public final class PedistackEndpointAdvice {
       value = {DataIntegrityViolationException.class, ConstraintViolationException.class})
   public ResponseEntity<GenericResponse<ErrorResponse>> createDataIntegrityErrorResponse(
       final DataIntegrityViolationException dataIntegrityViolationException) {
+    LoggerFactory.getLogger(PedistackEndpointAdvice.class)
+        .error(dataIntegrityViolationException.getMessage(), dataIntegrityViolationException);
     return ResponseEntity.status(INTERNAL_SERVER_ERROR)
         .body(
             GenericResponse.createResponse(
@@ -32,6 +35,8 @@ public final class PedistackEndpointAdvice {
   @ExceptionHandler(value = {NoClassDefFoundError.class, NullPointerException.class})
   public ResponseEntity<GenericResponse<ErrorResponse>> generalErrorResponse(
       final NoClassDefFoundError noClassDefFoundError) {
+    LoggerFactory.getLogger(PedistackEndpointAdvice.class)
+        .error(noClassDefFoundError.getMessage(), noClassDefFoundError);
     return ResponseEntity.status(INTERNAL_SERVER_ERROR)
         .body(
             GenericResponse.createResponse(
@@ -46,6 +51,7 @@ public final class PedistackEndpointAdvice {
   @ExceptionHandler(value = {RuntimeException.class, Exception.class})
   public ResponseEntity<GenericResponse<ErrorResponse>> runtimeException(
       final Exception exception) {
+    LoggerFactory.getLogger(PedistackEndpointAdvice.class).error(exception.getMessage(), exception);
     return ResponseEntity.status(INTERNAL_SERVER_ERROR)
         .body(
             GenericResponse.createResponse(
@@ -60,6 +66,8 @@ public final class PedistackEndpointAdvice {
   @ExceptionHandler(value = {IllegalArgumentException.class})
   public ResponseEntity<GenericResponse<ErrorResponse>> illegalArgumentException(
       final IllegalArgumentException illegalArgumentException) {
+    LoggerFactory.getLogger(PedistackEndpointAdvice.class)
+        .error(illegalArgumentException.getMessage(), illegalArgumentException);
     return ResponseEntity.status(INTERNAL_SERVER_ERROR)
         .body(
             GenericResponse.createResponse(
@@ -74,6 +82,8 @@ public final class PedistackEndpointAdvice {
   @ExceptionHandler(value = {PedistackException.class})
   public ResponseEntity<GenericResponse<ErrorResponse>> createErrorResponse(
       PedistackException pedistackException) {
+    LoggerFactory.getLogger(PedistackEndpointAdvice.class)
+        .error(pedistackException.getErrorCode().name(), pedistackException);
     return switch (pedistackException.getErrorCode()) {
       case INTERNAL_ERROR ->
           ResponseEntity.status(INTERNAL_SERVER_ERROR)

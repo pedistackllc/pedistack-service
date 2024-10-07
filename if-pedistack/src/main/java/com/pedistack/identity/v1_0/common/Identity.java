@@ -26,6 +26,8 @@ public final class Identity implements Serializable {
   @JsonProperty(required = true)
   private IdentityType type;
 
+  private IdentityStatus status;
+
   public String getInternalIdentity() {
     return internalIdentity;
   }
@@ -120,5 +122,13 @@ public final class Identity implements Serializable {
 
   public void setCommunicationAddresses(List<CommunicationAddress> communicationAddresses) {
     this.communicationAddresses = communicationAddresses;
+  }
+
+  public IdentityStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(IdentityStatus status) {
+    this.status = status;
   }
 }

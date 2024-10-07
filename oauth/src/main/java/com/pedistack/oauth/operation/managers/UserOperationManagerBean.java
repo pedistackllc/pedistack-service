@@ -12,7 +12,8 @@ import com.pedistack.events.identity.IdentityActivationEvent;
 import com.pedistack.events.oauth.EmailActivationOtpNotificationEvent;
 import com.pedistack.events.oauth.MsisdnActivationOtpNotificationEvent;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -85,8 +86,10 @@ public class UserOperationManagerBean implements UserOperationManager {
     passwordCredentialEntity.setStatus(CredentialStatus.ACTIVE.name());
     passwordCredentialEntity.setExpiryDate(
         Date.from(
-            Instant.now()
-                .plus(globalConfigurationManager.credentialExpiryMonths(), ChronoUnit.MONTHS)));
+            LocalDateTime.now()
+                .plusMonths(globalConfigurationManager.credentialExpiryMonths())
+                .atZone(ZoneId.systemDefault())
+                .toInstant()));
     passwordCredentialEntity.setCreationDateTime(Date.from(Instant.now()));
     passwordCredentialEntity.setCredentialReference(RandomStringUtils.randomAlphanumeric(32));
     credentialEntityDaoManager.save(passwordCredentialEntity);
@@ -215,5 +218,79 @@ public class UserOperationManagerBean implements UserOperationManager {
             sessionReference,
             emailAddressUserEntity.getId(),
             IdentityStatus.ACTIVATED));
+  }
+
+  @Override
+  public String emailActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException {
+    final UserEntity userEntity = userEntityDaoManager.findByEmailAddress(emailAddress);
+    final CredentialEntity credentialEntity =
+        credentialEntityDaoManager.findByUserIdentifierAndCredentialType(
+            userEntity.getId(), CredentialType.EMAIL_ACTIVATION_OTP);
+    return credentialEntity.getCredential();
+  }
+
+  @Override
+  public String msisdnActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException {
+    final UserEntity userEntity = userEntityDaoManager.findByMobileNumber(msisdn);
+    final CredentialEntity credentialEntity =
+        credentialEntityDaoManager.findByUserIdentifierAndCredentialType(
+            userEntity.getId(), CredentialType.MSISDN_ACTIVATION_OTP);
+    return credentialEntity.getCredential();
+  }
+
+  @Override
+  @Transactional
+  public void resendEmailAddressActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException {
+    final UserEntity userEntity = userEntityDaoManager.findByEmailAddress(emailAddress);
+    final CredentialEntity emailActivationTokenCredentialEntity =
+        credentialEntityDaoManager.findByUserIdentifierAndCredentialType(
+            userEntity.getId(), CredentialType.EMAIL_ACTIVATION_OTP);
+    emailActivationTokenCredentialEntity.setCredential(
+        RandomStringUtils.randomNumeric(globalConfigurationManager.emailActivationTokenLength()));
+    emailActivationTokenCredentialEntity.setCredentialReference(
+        RandomStringUtils.randomAlphanumeric(32));
+    emailActivationTokenCredentialEntity.setExpiryDate(Date.from(Instant.now().plusSeconds(3600)));
+    emailActivationTokenCredentialEntity.setCreationDateTime(Date.from(Instant.now()));
+    credentialEntityDaoManager.save(emailActivationTokenCredentialEntity);
+    applicationEventPublisher.publishEvent(
+        new EmailActivationOtpNotificationEvent(
+            this,
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            emailAddress,
+            emailActivationTokenCredentialEntity.getCredential()));
+  }
+
+  @Override
+  @Transactional
+  public void resendMsisdnActivationOtp(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException {
+    final UserEntity userEntity = userEntityDaoManager.findByMobileNumber(msisdn);
+    final CredentialEntity msisdnActivationTokenCredentialEntity =
+        credentialEntityDaoManager.findByUserIdentifierAndCredentialType(
+            userEntity.getId(), CredentialType.MSISDN_ACTIVATION_OTP);
+    msisdnActivationTokenCredentialEntity.setCredential(
+        RandomStringUtils.randomNumeric(globalConfigurationManager.emailActivationTokenLength()));
+    msisdnActivationTokenCredentialEntity.setCredentialReference(
+        RandomStringUtils.randomAlphanumeric(32));
+    msisdnActivationTokenCredentialEntity.setExpiryDate(Date.from(Instant.now().plusSeconds(3600)));
+    msisdnActivationTokenCredentialEntity.setCreationDateTime(Date.from(Instant.now()));
+    credentialEntityDaoManager.save(msisdnActivationTokenCredentialEntity);
+    applicationEventPublisher.publishEvent(
+        new MsisdnActivationOtpNotificationEvent(
+            this,
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            msisdn,
+            msisdnActivationTokenCredentialEntity.getCredential()));
   }
 }

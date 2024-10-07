@@ -46,6 +46,10 @@ public class OauthOperationManagerBean implements OauthOperationManager {
   @Override
   public OauthResponse authorize(OauthRequest oauthRequest) throws PedistackException {
     UserEntity userEntity;
+    if (oauthRequest.getGrantType() == null) {
+      throw PedistackException.createBadRequestException(
+          PedistackErrorDescriptions.GRANT_NOT_FOUND_ERROR_DESCRIPTION);
+    }
     switch (oauthRequest.getGrantType()) {
       case "authorization_code" -> {
         if (oauthRequest.getClientId() == null && oauthRequest.getClientSecret() == null) {

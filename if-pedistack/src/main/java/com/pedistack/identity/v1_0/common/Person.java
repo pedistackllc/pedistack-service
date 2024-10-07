@@ -1,5 +1,6 @@
 package com.pedistack.identity.v1_0.common;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.pedistack.v1_0.common.CountryCode;
@@ -20,6 +21,7 @@ public final class Person implements Serializable {
   private String maidenName;
   private GenderCode gender;
   private MaritalStatus maritalStatus;
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
   private Date birthDate;
   private String birthProvince;
   private CountryCode birthCountryCode;

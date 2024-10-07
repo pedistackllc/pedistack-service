@@ -10,6 +10,7 @@ import com.pedistack.db.oauth.UserEntity;
 import com.pedistack.db.oauth.UserEntityDaoManager;
 import com.pedistack.identity.v1_0.common.*;
 import com.pedistack.v1_0.common.CountryCode;
+import java.util.Optional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,36 +39,52 @@ public class BusinessInformationOperationManagerBean
       String sessionUserIdentifier,
       String sessionReference,
       String userIdentifier,
+      String businessIdentifier,
       Business business)
       throws PedistackException {
     businessEntityDaoManager.checkExistingBusinessInformation(
         business.getName(), business.getTradingName(), business.getRegistrationNumber());
     final UserEntity persistedUserEntity = userEntityDaoManager.findByIdentifier(userIdentifier);
-    final BusinessEntity businessEntity = new BusinessEntity();
+    BusinessEntity businessEntity;
+    if (businessIdentifier != null) {
+      businessEntity = businessEntityDaoManager.findByIdentifier(businessIdentifier);
+    } else {
+      businessEntity = new BusinessEntity();
+    }
     BeanUtils.copyProperties(business, businessEntity);
     businessEntity.setVerificationStatus(BusinessVerificationStatus.REGISTERED.name());
-    businessEntity.setBusinessType(business.getBusinessType().name());
-    businessEntity.setIndustry(business.getIndustry().name());
-    businessEntity.setRegistrationType(business.getRegistrationType().name());
-    businessEntity.setResidentCountryCode(business.getResidentCountryCode().name());
-    final AddressEntity postalAddressEntity =
-        addressInformationOperationManager.addOrUpdatePostalAddressInformation(
-            tenant,
-            sessionUserIdentifier,
-            sessionReference,
-            userIdentifier,
-            null,
-            business.getPostalAddress());
-    businessEntity.setPostalAddress(postalAddressEntity);
-    final AddressEntity communicationAddressEntity =
-        addressInformationOperationManager.addOrUpdateCommunicationAddressInformation(
-            tenant,
-            sessionUserIdentifier,
-            sessionReference,
-            userIdentifier,
-            null,
-            business.getCommunicationAddress());
-    businessEntity.setCommunicationAddress(communicationAddressEntity);
+    businessEntity.setBusinessType(
+        Optional.ofNullable(business.getBusinessType()).map(BusinessType::name).orElse(null));
+    businessEntity.setIndustry(
+        Optional.ofNullable(business.getIndustry()).map(Industry::name).orElse(null));
+    businessEntity.setRegistrationType(
+        Optional.ofNullable(business.getRegistrationType())
+            .map(RegistrationType::name)
+            .orElse(null));
+    businessEntity.setResidentCountryCode(
+        Optional.ofNullable(business.getResidentCountryCode()).map(CountryCode::name).orElse(null));
+    if (business.getPostalAddress() != null) {
+      final AddressEntity postalAddressEntity =
+          addressInformationOperationManager.addOrUpdatePostalAddressInformation(
+              tenant,
+              sessionUserIdentifier,
+              sessionReference,
+              userIdentifier,
+              null,
+              business.getPostalAddress());
+      businessEntity.setPostalAddress(postalAddressEntity);
+    }
+    if (business.getCommunicationAddress() != null) {
+      final AddressEntity communicationAddressEntity =
+          addressInformationOperationManager.addOrUpdateCommunicationAddressInformation(
+              tenant,
+              sessionUserIdentifier,
+              sessionReference,
+              userIdentifier,
+              null,
+              business.getCommunicationAddress());
+      businessEntity.setCommunicationAddress(communicationAddressEntity);
+    }
     businessEntity.setUser(persistedUserEntity);
     return businessEntityDaoManager.save(businessEntity);
   }

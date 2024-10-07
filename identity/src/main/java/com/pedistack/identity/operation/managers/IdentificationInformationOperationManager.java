@@ -52,7 +52,7 @@ public interface IdentificationInformationOperationManager {
       int size)
       throws PedistackException;
 
-  Identification identificationInformation(
+  IdentificationEntity identificationInformation(
       String tenant,
       String sessionUserIdentifier,
       String sessionUserReference,

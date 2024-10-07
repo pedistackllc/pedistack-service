@@ -12,6 +12,7 @@ public interface BusinessInformationOperationManager {
       String sessionUserIdentifier,
       String sessionReference,
       String userIdentifier,
+      String businessIdentifier,
       Business business)
       throws PedistackException;
 

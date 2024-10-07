@@ -731,4 +731,8 @@ public final class PedistackErrorDescriptions {
       PedistackErrorDescription.createDescription(
           "Card already registered. Please try again",
           "The card information is already registered. Please try again");
+
+  public static PedistackErrorDescription GRANT_NOT_FOUND_ERROR_DESCRIPTION =
+      PedistackErrorDescription.createDescription(
+          "Grant is required. Please try again", "The grant is not found. Please try again");
 }

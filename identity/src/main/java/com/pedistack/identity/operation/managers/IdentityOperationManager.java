@@ -3,6 +3,7 @@ package com.pedistack.identity.operation.managers;
 import com.pedistack.common.exception.PedistackException;
 import com.pedistack.identity.v1_0.*;
 import com.pedistack.identity.v1_0.common.*;
+import java.util.List;
 
 public interface IdentityOperationManager {
 
@@ -25,6 +26,9 @@ public interface IdentityOperationManager {
       String sessionUserIdentifier,
       String sessionReference,
       AgentRegistrationRequest agentRegistrationRequest)
+      throws PedistackException;
+
+  Identity identityInformation(String tenant, String sessionUserIdentifier, String sessionReference)
       throws PedistackException;
 
   Identity identityInformationWithMsisdn(
@@ -77,6 +81,15 @@ public interface IdentityOperationManager {
       PostalAddress postalAddress)
       throws PedistackException;
 
+  List<PostalAddress> postalAddresses(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress)
+      throws PedistackException;
+
   PostalAddress updatePostalAddressInformation(
       String tenant,
       String sessionUserIdentifier,
@@ -100,6 +113,15 @@ public interface IdentityOperationManager {
       String username,
       String emailAddress,
       CommunicationAddress communicationAddress)
+      throws PedistackException;
+
+  List<CommunicationAddress> communicationAddresses(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String mobileNumber,
+      String username,
+      String emailAddress)
       throws PedistackException;
 
   CommunicationAddress updateCommunicationAddressInformation(
@@ -140,5 +162,28 @@ public interface IdentityOperationManager {
       String sessionUserIdentifier,
       String sessionReference,
       String identificationIdentifier)
+      throws PedistackException;
+
+  void identityActivation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      IdentityActivationRequest identityActivationRequest)
+      throws PedistackException;
+
+  String msisdnActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException;
+
+  String emailActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
+      throws PedistackException;
+
+  void resendMsisdnActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String msisdn)
+      throws PedistackException;
+
+  void resendEmailActivationToken(
+      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
       throws PedistackException;
 }

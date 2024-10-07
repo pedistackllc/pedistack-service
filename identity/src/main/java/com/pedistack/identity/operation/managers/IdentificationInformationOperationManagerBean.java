@@ -10,7 +10,6 @@ import com.pedistack.db.oauth.UserEntity;
 import com.pedistack.db.oauth.UserEntityDaoManager;
 import com.pedistack.identity.v1_0.common.Identification;
 import com.pedistack.identity.v1_0.common.IdentificationType;
-import java.util.Optional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -43,10 +42,16 @@ public class IdentificationInformationOperationManagerBean
         identification.getIdentificationNumber(),
         identification.getType().name(),
         identification.getIssuingCountryCode().name());
-    IdentificationEntity identificationEntity =
-        Optional.ofNullable(
-                identificationEntityDaoManager.findByIdentifier(identificationIdentifier))
-            .orElse(new IdentificationEntity());
+    IdentificationEntity identificationEntity;
+    if (identificationIdentifier != null) {
+      identificationEntity =
+          identificationEntityDaoManager.findByIdentifier(identificationIdentifier);
+    } else {
+      identificationEntity = new IdentificationEntity();
+    }
+    if (identification.getIssuingCountryCode() != null) {
+      identificationEntity.setIssuingCountryCode(identification.getIssuingCountryCode().name());
+    }
     if (identification.getIdentificationNumber() != null) {
       identificationEntity.setIdentificationNumber(identification.getIdentificationNumber());
     }
@@ -175,14 +180,13 @@ public class IdentificationInformationOperationManagerBean
   }
 
   @Override
-  public Identification identificationInformation(
+  public IdentificationEntity identificationInformation(
       String tenant,
       String sessionUserIdentifier,
       String sessionUserReference,
       String identificationIdentifier)
       throws PedistackException {
-    return createIdentificationResponse(
-        identificationEntityDaoManager.findByIdentifier(identificationIdentifier));
+    return identificationEntityDaoManager.findByIdentifier(identificationIdentifier);
   }
 
   @Override
