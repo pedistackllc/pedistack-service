@@ -57,59 +57,11 @@ public class DeveloperInformationOperationManagerBean
   }
 
   @Override
-  public Developer developerInformationWithUsername(
-      String tenant, String sessionUserIdentifier, String sessionReference, String username)
+  public Developer developerInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference)
       throws PedistackException {
-    final DeveloperInformationEntity developerInformationEntity =
-        developerInformationEntityDaoManager.findByUserUsername(username);
-    if (developerInformationEntity.getUser() != null
-        && !developerInformationEntity.getUser().getId().equals(sessionUserIdentifier)) {
-      throw PedistackException.createInternalErrorException(
-          PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
-    }
-    return createDeveloperResponse(developerInformationEntity);
-  }
-
-  @Override
-  public Developer developerInformationWithClientId(
-      String tenant, String sessionUserIdentifier, String sessionReference, String clientId)
-      throws PedistackException {
-    final DeveloperInformationEntity developerInformationEntity =
-        developerInformationEntityDaoManager.findByUserClientId(clientId);
-    if (developerInformationEntity.getUser() != null
-        && !developerInformationEntity.getUser().getId().equals(sessionUserIdentifier)) {
-      throw PedistackException.createInternalErrorException(
-          PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
-    }
-    return createDeveloperResponse(developerInformationEntity);
-  }
-
-  @Override
-  public Developer developerInformationWithEmailAddress(
-      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
-      throws PedistackException {
-    final DeveloperInformationEntity developerInformationEntity =
-        developerInformationEntityDaoManager.findByUserEmailAddress(emailAddress);
-    if (developerInformationEntity.getUser() != null
-        && !developerInformationEntity.getUser().getId().equals(sessionUserIdentifier)) {
-      throw PedistackException.createInternalErrorException(
-          PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
-    }
-    return createDeveloperResponse(developerInformationEntity);
-  }
-
-  @Override
-  public Developer developerInformationWithMobileNumber(
-      String tenant, String sessionUserIdentifier, String sessionReference, String mobileNumber)
-      throws PedistackException {
-    final DeveloperInformationEntity developerInformationEntity =
-        developerInformationEntityDaoManager.findByUserMobileNumber(mobileNumber);
-    if (developerInformationEntity.getUser() != null
-        && !developerInformationEntity.getUser().getId().equals(sessionUserIdentifier)) {
-      throw PedistackException.createInternalErrorException(
-          PedistackErrorDescriptions.UNAUTHORIZED_ACCESS_ERROR_DESCRIPTION);
-    }
-    return createDeveloperResponse(developerInformationEntity);
+    return createDeveloperResponse(
+        developerInformationEntityDaoManager.findByUserIdentifier(sessionUserIdentifier));
   }
 
   private Developer createDeveloperResponse(DeveloperInformationEntity developerInformationEntity) {

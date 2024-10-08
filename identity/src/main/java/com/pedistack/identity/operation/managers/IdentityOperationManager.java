@@ -186,4 +186,20 @@ public interface IdentityOperationManager {
   void resendEmailActivationToken(
       String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
       throws PedistackException;
+
+  SocialMedia addOrUpdateSocialMediaInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, SocialMedia socialMedia)
+      throws PedistackException;
+
+  SocialMedia socialMediaInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference)
+      throws PedistackException;
+
+  Developer addOrUpdateDeveloperInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, Developer developer)
+      throws PedistackException;
+
+  Developer developerInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference)
+      throws PedistackException;
 }

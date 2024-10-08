@@ -691,6 +691,64 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
         tenant, sessionUserIdentifier, sessionReference, emailAddress);
   }
 
+  @Override
+  @Transactional
+  public SocialMedia addOrUpdateSocialMediaInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, SocialMedia socialMedia)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(null, null, null, sessionUserIdentifier);
+    final SocialMediaAccountEntity socialMediaAccountEntity =
+        socialMediaInformationOperationManager.addOrUpdateSocialMediaAccountInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            sessionUserIdentifier,
+            Optional.ofNullable(identityEntity.getSocialMediaAccount())
+                .map(SocialMediaAccountEntity::getId)
+                .orElse(null),
+            socialMedia);
+    return createSocialMediaResponse(socialMediaAccountEntity);
+  }
+
+  @Override
+  public SocialMedia socialMediaInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(null, null, null, sessionUserIdentifier);
+    return createSocialMediaResponse(identityEntity.getSocialMediaAccount());
+  }
+
+  @Override
+  @Transactional
+  public Developer addOrUpdateDeveloperInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference, Developer developer)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(null, null, null, sessionUserIdentifier);
+    final DeveloperInformationEntity developerInformationEntity =
+        developerInformationOperationManager.addOrUpdateDeveloperInformation(
+            tenant,
+            sessionUserIdentifier,
+            sessionReference,
+            sessionUserIdentifier,
+            Optional.ofNullable(identityEntity.getDeveloperInformation())
+                .map(DeveloperInformationEntity::getId)
+                .orElse(null),
+            developer);
+    return createDeveloperResponse(developerInformationEntity);
+  }
+
+  @Override
+  public Developer developerInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(null, null, null, sessionUserIdentifier);
+    return createDeveloperResponse(identityEntity.getDeveloperInformation());
+  }
+
   private Identity createIdentityResponse(IdentityEntity identityEntity) {
     final Identity identity = new Identity();
 

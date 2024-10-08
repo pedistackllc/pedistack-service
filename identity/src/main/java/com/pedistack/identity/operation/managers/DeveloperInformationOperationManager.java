@@ -15,19 +15,7 @@ public interface DeveloperInformationOperationManager {
       Developer developer)
       throws PedistackException;
 
-  Developer developerInformationWithUsername(
-      String tenant, String sessionUserIdentifier, String sessionReference, String username)
-      throws PedistackException;
-
-  Developer developerInformationWithClientId(
-      String tenant, String sessionUserIdentifier, String sessionReference, String clientId)
-      throws PedistackException;
-
-  Developer developerInformationWithEmailAddress(
-      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
-      throws PedistackException;
-
-  Developer developerInformationWithMobileNumber(
-      String tenant, String sessionUserIdentifier, String sessionReference, String mobileNumber)
+  Developer developerInformation(
+      String tenant, String sessionUserIdentifier, String sessionReference)
       throws PedistackException;
 }
