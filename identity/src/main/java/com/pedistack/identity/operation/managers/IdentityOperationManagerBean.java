@@ -37,6 +37,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
   private final GlobalConfigurationManager globalConfigurationManager;
   private final FinancialAccountOperationManager financialAccountOperationManager;
   private final CountryEntityDaoManager countryEntityDaoManager;
+  private final NextOfKinOperationManager nextOfKinOperationManager;
 
   public IdentityOperationManagerBean(
       UserOperationManager userOperationManager,
@@ -49,8 +50,10 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       IdentificationInformationOperationManager identificationInformationOperationManager,
       PersonalInformationOperationManager personalInformationOperationManager,
       GlobalConfigurationManager globalConfigurationManager,
+      NextOfKinOperationManager nextOfKinOperationManager,
       SocialMediaInformationOperationManager socialMediaInformationOperationManager) {
     this.userOperationManager = userOperationManager;
+    this.nextOfKinOperationManager = nextOfKinOperationManager;
     this.globalConfigurationManager = globalConfigurationManager;
     this.identityEntityDaoManager = identityEntityDaoManager;
     this.addressInformationOperationManager = addressInformationOperationManager;
@@ -299,27 +302,6 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
   }
 
   @Override
-  public Identity identityInformationWithMsisdn(
-      String tenant, String sessionUserIdentifier, String sessionReference, String mobileNumber)
-      throws PedistackException {
-    return createIdentityResponse(identityEntityDaoManager.findByMobileNumber(mobileNumber));
-  }
-
-  @Override
-  public Identity identityInformationWithEmailAddress(
-      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
-      throws PedistackException {
-    return createIdentityResponse(identityEntityDaoManager.findByEmailAddress(emailAddress));
-  }
-
-  @Override
-  public Identity identityInformationWithUsername(
-      String tenant, String sessionUserIdentifier, String sessionReference, String username)
-      throws PedistackException {
-    return createIdentityResponse(identityEntityDaoManager.findByUsername(username));
-  }
-
-  @Override
   public Person updatePersonalInformation(
       String tenant, String sessionUserIdentifier, String sessionReference, Person person)
       throws PedistackException {
@@ -330,59 +312,12 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
   }
 
   @Override
-  public Person updatePersonalInformation(
-      String tenant,
-      String sessionUserIdentifier,
-      String sessionReference,
-      String mobileNumber,
-      String username,
-      String emailAddress,
-      Person person)
-      throws PedistackException {
-    IdentityEntity identityEntity =
-        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
-    final PersonEntity personEntity =
-        personalInformationOperationManager.addOrUpdatePersonalInformation(
-            tenant,
-            sessionUserIdentifier,
-            sessionReference,
-            identityEntity.getUser().getId(),
-            person);
-    return createPersonResponse(personEntity);
-  }
-
-  @Override
   public Business updateBusinessInformation(
       String tenant, String sessionUserIdentifier, String sessionReference, Business business)
       throws PedistackException {
     BusinessEntity businessEntity =
         businessInformationOperationManager.addOrUpdateBusinessInformation(
             tenant, sessionUserIdentifier, sessionReference, sessionUserIdentifier, null, business);
-    return createBusinessResponse(businessEntity);
-  }
-
-  @Override
-  public Business updateBusinessInformation(
-      String tenant,
-      String sessionUserIdentifier,
-      String sessionReference,
-      String mobileNumber,
-      String username,
-      String emailAddress,
-      Business business)
-      throws PedistackException {
-    IdentityEntity identityEntity =
-        identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
-    BusinessEntity businessEntity =
-        businessInformationOperationManager.addOrUpdateBusinessInformation(
-            tenant,
-            sessionUserIdentifier,
-            sessionReference,
-            identityEntity.getUser().getId(),
-            Optional.ofNullable(identityEntity.getBusiness())
-                .map(BusinessEntity::getId)
-                .orElse(null),
-            business);
     return createBusinessResponse(businessEntity);
   }
 
@@ -399,6 +334,10 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       throws PedistackException {
     IdentityEntity identityEntity =
         identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
+    if (identityEntity.getPostalAddresses().size() > 10) {
+      throw PedistackException.createInternalErrorException(
+          PedistackErrorDescriptions.POSTAL_ADDRESS_SIZE_LIMIT_ERROR_DESCRIPTION);
+    }
     final AddressEntity postalAddressEntity =
         addressInformationOperationManager.addOrUpdatePostalAddressInformation(
             tenant,
@@ -486,6 +425,10 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
       throws PedistackException {
     IdentityEntity identityEntity =
         identityEntityInformation(mobileNumber, emailAddress, username, sessionUserIdentifier);
+    if (identityEntity.getCommunicationAddresses().size() > 10) {
+      throw PedistackException.createInternalErrorException(
+          PedistackErrorDescriptions.COMMUNICATION_ADDRESS_SIZE_LIMIT_ERROR_DESCRIPTION);
+    }
     final AddressEntity communicationAddressEntity =
         addressInformationOperationManager.addOrUpdateCommunicationAddressInformation(
             tenant,
@@ -749,6 +692,61 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     return createDeveloperResponse(identityEntity.getDeveloperInformation());
   }
 
+  @Override
+  public NextOfKin addOrUpdateNextOfKinInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String nextOfKinIdentifier,
+      NextOfKin nextOfKin)
+      throws PedistackException {
+    return createNextOfKinResponse(
+        nextOfKinOperationManager.addOrUpdateNextOfKinInformation(
+            tenant, sessionUserIdentifier, sessionReference, nextOfKinIdentifier, nextOfKin));
+  }
+
+  @Override
+  public List<NextOfKin> nextOfKins(
+      String tenant, String sessionUserIdentifier, String sessionReference) {
+    return nextOfKinOperationManager.nextOfKins(tenant, sessionUserIdentifier, sessionReference);
+  }
+
+  @Override
+  public NextOfKin nextOfKinInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String nextOfKinIdentifier)
+      throws PedistackException {
+    return nextOfKinOperationManager.nextOfKinInformation(
+        tenant, sessionUserIdentifier, sessionReference, nextOfKinIdentifier);
+  }
+
+  @Override
+  @Transactional
+  public void deleteNextOfKin(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String nextOfKinIdentifier)
+      throws PedistackException {
+    final IdentityEntity identityEntity =
+        identityEntityInformation(null, null, null, sessionUserIdentifier);
+    final NextOfKinEntity nextOfKinEntity =
+        identityEntity.getKins().stream()
+            .filter(kin -> kin.getId().equals(nextOfKinIdentifier))
+            .findAny()
+            .orElse(null);
+    if (nextOfKinEntity == null) {
+      throw PedistackException.createInternalErrorException(
+          PedistackErrorDescriptions.NEXT_OF_KIN_NOT_FOUND_ERROR_DESCRIPTION);
+    }
+    identityEntity.getKins().remove(nextOfKinEntity);
+    identityEntityDaoManager.save(identityEntity);
+    nextOfKinOperationManager.deleteNextOfKin(
+        tenant, sessionUserIdentifier, sessionReference, nextOfKinIdentifier);
+  }
+
   private Identity createIdentityResponse(IdentityEntity identityEntity) {
     final Identity identity = new Identity();
 
@@ -895,5 +893,11 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
           PedistackErrorDescriptions.IDENTITY_INFORMATION_NOT_FOUND_ERROR_DESCRIPTION);
     }
     return identityEntity;
+  }
+
+  private NextOfKin createNextOfKinResponse(NextOfKinEntity nextOfKinEntity) {
+    final NextOfKin nextOfKin = new NextOfKin();
+    BeanUtils.copyProperties(nextOfKinEntity, nextOfKin);
+    return nextOfKin;
   }
 }

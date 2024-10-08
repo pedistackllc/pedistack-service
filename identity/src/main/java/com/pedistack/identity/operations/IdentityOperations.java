@@ -597,4 +597,106 @@ public class IdentityOperations {
         GenericResponse.createResponse(
             persistedDeveloper, "Developer information fetched successfully"));
   }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Add the kin information of an authorized user")
+  @PostMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/kin")
+  public ResponseEntity<GenericResponse<NextOfKin>> addNextOfKinInformation(
+      @RequestHeader HttpHeaders httpHeaders, @RequestBody NextOfKin nextOfKin)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.ADD_IDENTITY_KIN_PERMISSION);
+    final NextOfKin persistedKin =
+        identityOperationManager.addOrUpdateNextOfKinInformation(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            null,
+            nextOfKin);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(persistedKin, "Kin information added successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Update the kin information of an authorized user")
+  @PutMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      value = "id/kin/{id}")
+  public ResponseEntity<GenericResponse<NextOfKin>> updateNextOfKinInformation(
+      @RequestHeader HttpHeaders httpHeaders,
+      @PathVariable("id") String kinIdentifier,
+      @RequestBody NextOfKin nextOfKin)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.UPDATE_IDENTITY_KIN_PERMISSION);
+    final NextOfKin persistedKin =
+        identityOperationManager.addOrUpdateNextOfKinInformation(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            kinIdentifier,
+            nextOfKin);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(persistedKin, "Kin information updated successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Get the list of kins of an authorized user")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "id/kins")
+  public ResponseEntity<GenericResponse<List<NextOfKin>>> nextOfKins(
+      @RequestHeader HttpHeaders httpHeaders) throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_IDENTITY_KINS_PERMISSION);
+    final List<NextOfKin> nextOfKins =
+        identityOperationManager.nextOfKins(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders));
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(nextOfKins, "Kin information listed successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Get the kin information with an identifier")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "id/kin/{id}")
+  public ResponseEntity<GenericResponse<NextOfKin>> nextOfKinInformation(
+      @RequestHeader HttpHeaders httpHeaders, @PathVariable("id") String nextOfKinIdentifier)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_IDENTITY_KIN_PERMISSION);
+    final NextOfKin nextOfKin =
+        identityOperationManager.nextOfKinInformation(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            nextOfKinIdentifier);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(nextOfKin, "Kin information fetched successfully"));
+  }
+
+  @Operation(
+      tags = {"Identity"},
+      summary = "Delete the kin information with an identifier")
+  @DeleteMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "id/kin/{id}")
+  public ResponseEntity<GenericResponse<Void>> deleteNextOfKinInformation(
+      @RequestHeader HttpHeaders httpHeaders, @PathVariable("id") String nextOfKinIdentifier)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.DELETE_IDENTITY_KIN_PERMISSION);
+    identityOperationManager.deleteNextOfKin(
+        null,
+        authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+        authorizationOperationManager.sessionReference(httpHeaders),
+        nextOfKinIdentifier);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse("Kin information removed successfully"));
+  }
 }

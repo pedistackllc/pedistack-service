@@ -31,44 +31,12 @@ public interface IdentityOperationManager {
   Identity identityInformation(String tenant, String sessionUserIdentifier, String sessionReference)
       throws PedistackException;
 
-  Identity identityInformationWithMsisdn(
-      String tenant, String sessionUserIdentifier, String sessionReference, String mobileNumber)
-      throws PedistackException;
-
-  Identity identityInformationWithEmailAddress(
-      String tenant, String sessionUserIdentifier, String sessionReference, String emailAddress)
-      throws PedistackException;
-
-  Identity identityInformationWithUsername(
-      String tenant, String sessionUserIdentifier, String sessionReference, String username)
-      throws PedistackException;
-
   Person updatePersonalInformation(
       String tenant, String sessionUserIdentifier, String sessionReference, Person person)
       throws PedistackException;
 
-  Person updatePersonalInformation(
-      String tenant,
-      String sessionUserIdentifier,
-      String sessionReference,
-      String mobileNumber,
-      String username,
-      String emailAddress,
-      Person person)
-      throws PedistackException;
-
   Business updateBusinessInformation(
       String tenant, String sessionUserIdentifier, String sessionReference, Business business)
-      throws PedistackException;
-
-  Business updateBusinessInformation(
-      String tenant,
-      String sessionUserIdentifier,
-      String sessionReference,
-      String mobileNumber,
-      String username,
-      String emailAddress,
-      Business business)
       throws PedistackException;
 
   PostalAddress addPostalAddressInformation(
@@ -201,5 +169,29 @@ public interface IdentityOperationManager {
 
   Developer developerInformation(
       String tenant, String sessionUserIdentifier, String sessionReference)
+      throws PedistackException;
+
+  NextOfKin addOrUpdateNextOfKinInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String nextOfKinIdentifier,
+      NextOfKin nextOfKin)
+      throws PedistackException;
+
+  List<NextOfKin> nextOfKins(String tenant, String sessionUserIdentifier, String sessionReference);
+
+  NextOfKin nextOfKinInformation(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String nextOfKinIdentifier)
+      throws PedistackException;
+
+  void deleteNextOfKin(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String nextOfKinIdentifier)
       throws PedistackException;
 }

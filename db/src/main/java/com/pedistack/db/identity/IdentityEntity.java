@@ -29,6 +29,10 @@ public final class IdentityEntity extends BaseEntity {
   @JoinTable(schema = "ident", name = "identity_identifications")
   private List<IdentificationEntity> identifications;
 
+  @ManyToMany
+  @JoinTable(schema = "ident",name = "identity_kins")
+  private List<NextOfKinEntity> kins;
+
   @ManyToOne private SocialMediaAccountEntity socialMediaAccount;
   @ManyToOne private DeveloperInformationEntity developerInformation;
 
@@ -123,5 +127,13 @@ public final class IdentityEntity extends BaseEntity {
 
   public void setStatus(String status) {
     this.status = status;
+  }
+
+  public List<NextOfKinEntity> getKins() {
+    return kins;
+  }
+
+  public void setKins(List<NextOfKinEntity> kins) {
+    this.kins = kins;
   }
 }

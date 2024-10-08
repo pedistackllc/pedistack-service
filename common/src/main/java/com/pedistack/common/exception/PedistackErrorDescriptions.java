@@ -735,4 +735,21 @@ public final class PedistackErrorDescriptions {
   public static PedistackErrorDescription GRANT_NOT_FOUND_ERROR_DESCRIPTION =
       PedistackErrorDescription.createDescription(
           "Grant is required. Please try again", "The grant is not found. Please try again");
+
+  public static PedistackErrorDescription NEXT_OF_KIN_NOT_FOUND_ERROR_DESCRIPTION =
+      PedistackErrorDescription.createDescription(
+          "Next of kin information not found. Please try again",
+          "The next of kin information is not found. Please try again");
+
+  public static PedistackErrorDescription COMMUNICATION_ADDRESS_SIZE_LIMIT_ERROR_DESCRIPTION =
+          PedistackErrorDescription.createDescription(
+                  "Communication address size limit exceeded. Please try again",
+                  "The limit of the communication address is exceeded. Please try again");
+
+  public static PedistackErrorDescription POSTAL_ADDRESS_SIZE_LIMIT_ERROR_DESCRIPTION =
+          PedistackErrorDescription.createDescription(
+                  "Postal address size limit exceeded. Please try again",
+                  "The limit of the postal address is exceeded. Please try again");
+
+
 }
