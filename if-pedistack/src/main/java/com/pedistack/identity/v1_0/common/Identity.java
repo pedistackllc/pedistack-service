@@ -20,6 +20,7 @@ public final class Identity implements Serializable {
   private List<PostalAddress> postalAddresses;
   private List<CommunicationAddress> communicationAddresses;
   private List<Identification> identifications;
+  private List<NextOfKin> kins;
   private SocialMedia socialMedia;
   private Developer developer;
 
@@ -130,5 +131,13 @@ public final class Identity implements Serializable {
 
   public void setStatus(IdentityStatus status) {
     this.status = status;
+  }
+
+  public List<NextOfKin> getKins() {
+    return kins;
+  }
+
+  public void setKins(List<NextOfKin> kins) {
+    this.kins = kins;
   }
 }

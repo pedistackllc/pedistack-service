@@ -778,6 +778,7 @@ public class IdentityOperationManagerBean implements IdentityOperationManager {
     identity.setType(IdentityType.valueOf(identityEntity.getUser().getProfile().getType()));
     identity.setStatus(
         com.pedistack.identity.v1_0.common.IdentityStatus.valueOf(identityEntity.getStatus()));
+    identity.setKins(identityEntity.getKins().stream().map(this::createNextOfKinResponse).toList());
     return identity;
   }
 
