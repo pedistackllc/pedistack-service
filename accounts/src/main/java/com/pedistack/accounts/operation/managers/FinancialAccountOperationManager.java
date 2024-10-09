@@ -18,11 +18,34 @@ public interface FinancialAccountOperationManager {
       throws PedistackException;
 
   List<FinancialAccount> userAccounts(
+      String tenant, String sessionUserIdentifier, String sessionReference)
+      throws PedistackException;
+
+  List<FinancialAccount> addUserAccount(
       String tenant,
       String sessionUserIdentifier,
       String sessionReference,
-      String emailAddress,
-      String mobileNumber,
-      String username)
+      List<String> currencyCodes)
+      throws PedistackException;
+
+  void blockFinancialAccount(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String accountIdentifier)
+      throws PedistackException;
+
+  void unblockFinancialAccount(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String accountIdentifier)
+      throws PedistackException;
+
+  void closeFinancialAccount(
+      String tenant,
+      String sessionUserIdentifier,
+      String sessionReference,
+      String accountIdentifier)
       throws PedistackException;
 }

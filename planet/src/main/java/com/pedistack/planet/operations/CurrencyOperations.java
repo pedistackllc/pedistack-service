@@ -3,6 +3,7 @@ package com.pedistack.planet.operations;
 import com.pedistack.common.authorization.AuthorizationPermissions;
 import com.pedistack.common.exception.PedistackException;
 import com.pedistack.common.io.GenericResponse;
+import com.pedistack.common.io.PageResponse;
 import com.pedistack.oauth.operation.managers.AuthorizationOperationManager;
 import com.pedistack.planet.operation.managers.CurrencyOperationManager;
 import com.pedistack.planet.v1_0.CurrencyRequest;
@@ -85,6 +86,28 @@ public class CurrencyOperations {
             currencyCode);
     return ResponseEntity.ok(
         GenericResponse.createResponse(currency, "Currency fetched successfully"));
+  }
+
+  @Operation(
+      tags = {"Planet"},
+      summary = "Get the list of supported currencies")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "currencies")
+  public ResponseEntity<GenericResponse<PageResponse<Currency>>> list(
+      @RequestHeader HttpHeaders httpHeaders,
+      @RequestParam("page") int page,
+      @RequestParam("size") int size)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.GET_CURRENCIES_PERMISSION);
+    final PageResponse<Currency> currencyPageResponse =
+        currencyOperationManager.list(
+            null,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            page,
+            size);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(currencyPageResponse, "Currencies fetched successfully"));
   }
 
   @Operation(

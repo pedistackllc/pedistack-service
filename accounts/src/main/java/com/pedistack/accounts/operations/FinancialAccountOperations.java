@@ -30,12 +30,35 @@ public class FinancialAccountOperations {
 
   @Operation(
       tags = {"Accounts"},
-      summary = "Get list of user accounts with mobile number")
-  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "/user/msisdn/{msisdn}/accounts")
+      summary = "Register a new financial account")
+  @PostMapping(
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      value = "account")
+  public ResponseEntity<GenericResponse<List<FinancialAccount>>> addAccount(
+      @RequestHeader("X-Tenant-Name") String tenant,
+      @RequestHeader HttpHeaders httpHeaders,
+      @RequestBody List<String> currencyCodes)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.ADD_USER_ACCOUNT_PERMISSION);
+    final List<FinancialAccount> financialAccounts =
+        financialAccountOperationManager.addUserAccount(
+            tenant,
+            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+            authorizationOperationManager.sessionReference(httpHeaders),
+            currencyCodes);
+    return ResponseEntity.ok(
+        GenericResponse.createResponse(
+            financialAccounts, "Financial account registered successfully"));
+  }
+
+  @Operation(
+      tags = {"Accounts"},
+      summary = "Get list of user accounts of an authorized user")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "/accounts")
   public ResponseEntity<GenericResponse<List<FinancialAccount>>> msisdnAccounts(
-      @RequestHeader("X-Tenant-Name") String tenant,
-      @RequestHeader HttpHeaders httpHeaders,
-      @PathVariable("msisdn") String msisdn)
+      @RequestHeader("X-Tenant-Name") String tenant, @RequestHeader HttpHeaders httpHeaders)
       throws PedistackException {
     authorizationOperationManager.validateAuthorizationPermissions(
         httpHeaders, AuthorizationPermissions.GET_USER_ACCOUNTS_PERMISSION);
@@ -43,61 +66,65 @@ public class FinancialAccountOperations {
         financialAccountOperationManager.userAccounts(
             tenant,
             authorizationOperationManager.sessionUserIdentifier(httpHeaders),
-            authorizationOperationManager.sessionReference(httpHeaders),
-            null,
-            msisdn,
-            null);
+            authorizationOperationManager.sessionReference(httpHeaders));
     return ResponseEntity.ok(
         GenericResponse.createResponse(financialAccounts, "Accounts listed successfully"));
   }
 
   @Operation(
       tags = {"Accounts"},
-      summary = "Get list of user accounts with email address")
-  @GetMapping(
-      produces = MediaType.APPLICATION_JSON_VALUE,
-      value = "/user/email/{emailAddress}/accounts")
-  public ResponseEntity<GenericResponse<List<FinancialAccount>>> emailAddressAccounts(
+      summary = "Close the financial account with an identifier")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "/account/{id}/close")
+  public ResponseEntity<GenericResponse<Void>> closeFinancialAccount(
       @RequestHeader("X-Tenant-Name") String tenant,
       @RequestHeader HttpHeaders httpHeaders,
-      @PathVariable("emailAddress") String emailAddress)
+      @PathVariable("id") String accountIdentifier)
       throws PedistackException {
     authorizationOperationManager.validateAuthorizationPermissions(
-        httpHeaders, AuthorizationPermissions.GET_USER_ACCOUNTS_PERMISSION);
-    final List<FinancialAccount> financialAccounts =
-        financialAccountOperationManager.userAccounts(
-            tenant,
-            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
-            authorizationOperationManager.sessionReference(httpHeaders),
-            emailAddress,
-            null,
-            null);
-    return ResponseEntity.ok(
-        GenericResponse.createResponse(financialAccounts, "Accounts listed successfully"));
+        httpHeaders, AuthorizationPermissions.CLOSE_USER_ACCOUNT_PERMISSION);
+    financialAccountOperationManager.closeFinancialAccount(
+        tenant,
+        authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+        authorizationOperationManager.sessionReference(httpHeaders),
+        accountIdentifier);
+    return ResponseEntity.ok(GenericResponse.createResponse("Accounts closed successfully"));
   }
 
   @Operation(
       tags = {"Accounts"},
-      summary = "Get list of user accounts with username")
-  @GetMapping(
-      produces = MediaType.APPLICATION_JSON_VALUE,
-      value = "/user/username/{username}/accounts")
-  public ResponseEntity<GenericResponse<List<FinancialAccount>>> usernameAccounts(
+      summary = "Block the financial account with an identifier")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "/account/{id}/block")
+  public ResponseEntity<GenericResponse<Void>> blockFinancialAccount(
       @RequestHeader("X-Tenant-Name") String tenant,
       @RequestHeader HttpHeaders httpHeaders,
-      @PathVariable("username") String username)
+      @PathVariable("id") String accountIdentifier)
       throws PedistackException {
     authorizationOperationManager.validateAuthorizationPermissions(
-        httpHeaders, AuthorizationPermissions.GET_USER_ACCOUNTS_PERMISSION);
-    final List<FinancialAccount> financialAccounts =
-        financialAccountOperationManager.userAccounts(
-            tenant,
-            authorizationOperationManager.sessionUserIdentifier(httpHeaders),
-            authorizationOperationManager.sessionReference(httpHeaders),
-            null,
-            null,
-            username);
-    return ResponseEntity.ok(
-        GenericResponse.createResponse(financialAccounts, "Accounts listed successfully"));
+        httpHeaders, AuthorizationPermissions.BLOCK_USER_ACCOUNT_PERMISSION);
+    financialAccountOperationManager.blockFinancialAccount(
+        tenant,
+        authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+        authorizationOperationManager.sessionReference(httpHeaders),
+        accountIdentifier);
+    return ResponseEntity.ok(GenericResponse.createResponse("Accounts blocked successfully"));
+  }
+
+  @Operation(
+      tags = {"Accounts"},
+      summary = "Unblock the financial account with an identifier")
+  @DeleteMapping(produces = MediaType.APPLICATION_JSON_VALUE, value = "/account/{id}/block")
+  public ResponseEntity<GenericResponse<Void>> unblockFinancialAccount(
+      @RequestHeader("X-Tenant-Name") String tenant,
+      @RequestHeader HttpHeaders httpHeaders,
+      @PathVariable("id") String accountIdentifier)
+      throws PedistackException {
+    authorizationOperationManager.validateAuthorizationPermissions(
+        httpHeaders, AuthorizationPermissions.UNBLOCK_USER_ACCOUNT_PERMISSION);
+    financialAccountOperationManager.unblockFinancialAccount(
+        tenant,
+        authorizationOperationManager.sessionUserIdentifier(httpHeaders),
+        authorizationOperationManager.sessionReference(httpHeaders),
+        accountIdentifier);
+    return ResponseEntity.ok(GenericResponse.createResponse("Accounts unblocked successfully"));
   }
 }

@@ -742,14 +742,17 @@ public final class PedistackErrorDescriptions {
           "The next of kin information is not found. Please try again");
 
   public static PedistackErrorDescription COMMUNICATION_ADDRESS_SIZE_LIMIT_ERROR_DESCRIPTION =
-          PedistackErrorDescription.createDescription(
-                  "Communication address size limit exceeded. Please try again",
-                  "The limit of the communication address is exceeded. Please try again");
+      PedistackErrorDescription.createDescription(
+          "Communication address size limit exceeded. Please try again",
+          "The limit of the communication address is exceeded. Please try again");
 
   public static PedistackErrorDescription POSTAL_ADDRESS_SIZE_LIMIT_ERROR_DESCRIPTION =
-          PedistackErrorDescription.createDescription(
-                  "Postal address size limit exceeded. Please try again",
-                  "The limit of the postal address is exceeded. Please try again");
+      PedistackErrorDescription.createDescription(
+          "Postal address size limit exceeded. Please try again",
+          "The limit of the postal address is exceeded. Please try again");
 
-
+  public static PedistackErrorDescription ACCOUNT_CLOSE_ERROR_DESCRIPTION =
+      PedistackErrorDescription.createDescription(
+          "Cannot close a funded account. Please try again",
+          "Cannot close a funded account. Make sure the balance is zero. Please try again");
 }
